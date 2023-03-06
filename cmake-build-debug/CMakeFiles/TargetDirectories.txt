@@ -1,0 +1,3 @@
+/Users/idatewang/Documents/CAD/CAD_final_project/cmake-build-debug/CMakeFiles/CAD_final_project.dir
+/Users/idatewang/Documents/CAD/CAD_final_project/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/idatewang/Documents/CAD/CAD_final_project/cmake-build-debug/CMakeFiles/rebuild_cache.dir
