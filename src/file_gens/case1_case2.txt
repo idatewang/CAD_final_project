@@ -1,0 +1,18 @@
+Boundary = (9,9), (94,89)
+NumPins = 7
+PIN p0 (21,29)
+PIN p1 (80,79)
+PIN p2 (10,73)
+PIN p3 (74,61)
+PIN p4 (57,61)
+PIN p5 (15,16)
+PIN p6 (94,60)
+NumPins = 8
+PIN p0 (88,34)
+PIN p1 (34,42)
+PIN p2 (26,35)
+PIN p3 (14,59)
+PIN p4 (51,81)
+PIN p5 (84,52)
+PIN p6 (28,80)
+PIN p7 (50,97)

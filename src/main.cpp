@@ -4,7 +4,7 @@
 #include <cstdio>
 #include "util.h"
 #include "Steiner.h"
-
+#include "rebound.h"
 using namespace std;
 
 bool gDoplot, gOutfile;
@@ -38,22 +38,24 @@ int main(int argc, char **argv) {
     TimeUsage timer;
     if (!handleArgument(argc, argv)) return -1;
     string fileName = argv[1];
-    Steiner st;
-    st.parse(argv[1]);
-    st.solve();
+    Steiner st_1, st_2;
+    st_1.parse(argv[1]);
+    st_2.parse(argv[2]);
+    rebound(&st_1, &st_2);
+    st_1.solve();
 #ifdef VERBOSE
     timer.showUsage("solve", TimeUsage::PARTIAL);
     timer.start(TimeUsage::PARTIAL);
 #endif
     if (gDoplot) {
-        st.plot(plotName);
+        st_1.plot(plotName);
 #ifdef VERBOSE
         timer.showUsage("plot", TimeUsage::PARTIAL);
         timer.start(TimeUsage::PARTIAL);
 #endif
     }
     if (gOutfile) {
-        st.outfile(outfileName);
+        st_1.outfile(outfileName);
 #ifdef VERBOSE
         timer.showUsage("outfile", TimeUsage::PARTIAL);
         timer.start(TimeUsage::PARTIAL);

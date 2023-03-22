@@ -23,6 +23,23 @@ public:
 
     void outfile(const std::string &outfileName);
 
+    // helper getters
+    std::vector<Point> get_points() {
+        return _points;
+    }
+
+    std::string get_name() {
+        return _name;
+    }
+
+    // helper setters
+    void set_bounds(int bottom, int left, int top, int right) {
+        _boundaryBottom = bottom;
+        _boundaryLeft = left;
+        _boundaryTop = top;
+        _boundaryRight = right;
+    }
+
 private: // helper functions
     // parse ---------------------
     void addEdge(int p1, int p2);
