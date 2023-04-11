@@ -36,5 +36,15 @@ public:
     int left, right;
 };
 
+class Boundary {
+public:
+    Boundary(int xMin, int xMax, int yMin, int yMax)
+            : xleft(xMin), xright(xMax), ybot(yMin), ytop(yMax) {}
+
+    ~Boundary() {}
+
+    int xleft, xright, ybot, ytop;
+};
+
 
 #endif

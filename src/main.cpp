@@ -5,6 +5,8 @@
 #include "util.h"
 #include "Steiner.h"
 #include "rebound.h"
+#include "Num_Nets_Pins.h"
+
 using namespace std;
 
 bool gDoplot, gOutfile;
@@ -39,6 +41,8 @@ int main(int argc, char **argv) {
     if (!handleArgument(argc, argv)) return -1;
     string fileName = argv[1];
     Steiner st_1, st_2;
+    Steiner st_overlap;
+
     st_1.parse(argv[1]);
     st_2.parse(argv[2]);
     rebound(&st_1, &st_2);

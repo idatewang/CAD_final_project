@@ -534,3 +534,147 @@ void Steiner::outfile(const string &outfileName) {
     }
     of.close();
 }
+
+//Added Code
+void Steiner::createSteiner(const std::string &fileName, std::vector<Point> Nets, Boundary Bounds) {
+    _name = getFileName(fileName, true);
+    _boundaryLeft = Bounds.xleft;
+    _boundaryRight = Bounds.xright;
+    _boundaryTop = Bounds.ytop;
+    _boundaryBottom = Bounds.ybot;
+
+    _points.resize(Nets.size());
+    for (int i = 0; i < Nets.size(); i++) {
+        _points[i] = Nets.at(i);
+    }
+}
+
+int Steiner::initializeFile(std::ofstream &of) {
+    of << "set size ratio -1" << endl;
+    of << "set nokey" << endl;
+    of << "set xrange["
+       << (_boundaryRight - _boundaryLeft) * -0.05 << ":"
+       << (_boundaryRight - _boundaryLeft) * 1.05 << "]" << endl;
+    of << "set yrange["
+       << (_boundaryTop - _boundaryBottom) * -0.05 << ":"
+       << (_boundaryTop - _boundaryBottom) * 1.05 << "]" << endl;
+    int idx = 1;
+    of << "set object " << idx++ << " rect from "
+       << _boundaryLeft << "," << _boundaryBottom << " to "
+       << _boundaryRight << "," << _boundaryTop << "fc rgb \"grey\" behind\n";
+    return idx;
+}
+
+int Steiner::plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<std::vector<int>>> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical, std::string color) {
+    // point
+    for (int i = 0; i < _init_p; ++i) {
+        file << "set object circle at first " << _points[i].x << ","
+             << _points[i].y << " radius char 0.3 fillstyle solid "
+             << "fc rgb \"red\" front\n";
+    }
+    // RSG
+    for (unsigned i = 0; i < _init_edges.size(); ++i) {
+        Point &p1 = _points[_init_edges[i].p1];
+        Point &p2 = _points[_init_edges[i].p2];
+        file << "set arrow " << idx++ << " from "
+             << p1.x << "," << p1.y << " to "
+             << p2.x << "," << p2.y
+             << " nohead lc rgb \"white\" lw 1 front\n";
+    }
+    // MST
+    for (unsigned i = 0; i < _init_MST.size(); ++i) {
+        Point &p1 = _points[_init_edges[_init_MST[i]].p1];
+        Point &p2 = _points[_init_edges[_init_MST[i]].p2];
+        file << "set arrow " << idx++ << " from "
+             << p1.x << "," << p1.y << " to "
+             << p2.x << "," << p2.y
+             << " nohead lc rgb \"blue\" lw 1 front\n";
+    }
+    // s-point
+    for (unsigned i = _init_p; i < _points.size(); ++i) {
+        file << "set object circle at first " << _points[i].x << ","
+             << _points[i].y << " radius char 0.3 fillstyle solid "
+             << "fc rgb \"yellow\" front\n";
+    }
+    std::vector<std::vector<int>> horizontalNet;
+    std::vector<std::vector<int>> verticalNet;
+    // RST
+    for (unsigned i = 0; i < _MST.size(); ++i) {
+        if (_edges_del[_MST[i]]) continue;
+        Point &p1 = _points[_edges[_MST[i]].p1];
+        Point &p2 = _points[_edges[_MST[i]].p2];
+        if (p1.x != p2.x) {
+            std::vector<int> tempH;
+            file << "set arrow " << idx++ << " from "
+                 << p1.x << "," << p1.y << " to "
+                 << p2.x << "," << p1.y
+                 << " nohead lc rgb \""
+                 << color
+                 << "\" lw 1.5 back\n";
+            //checkEdges << "H " << p1.y << " " << p1.x << " " << p2.x << std::endl;
+            tempH.push_back(p1.y);
+            tempH.push_back(p1.x);
+            tempH.push_back(p2.x);
+            horizontalNet.push_back(tempH);
+        }
+        if (p1.y != p2.y) {
+            std::vector<int> tempV;
+            file << "set arrow " << idx++ << " from "
+                 << p2.x << "," << p1.y << " to "
+                 << p2.x << "," << p2.y
+                 << " nohead lc rgb \""
+                 << color
+                 << "\" lw 1.5 back\n";
+            // checkEdges << "V " << p2.x << " " << p1.y << " " << p2.y << std::endl;
+            tempV.push_back(p2.x);
+            tempV.push_back(p1.y);
+            tempV.push_back(p2.y);
+            verticalNet.push_back(tempV);
+        }
+    }
+    horizontal.push_back(horizontalNet);
+    vertical.push_back(verticalNet);
+    return idx;
+}
+
+std::vector<Point> Steiner::getPoints() {
+    return _points;
+} //needs a getter
+std::vector<Edge> Steiner::getEdges() {
+    return _edges;
+}        //needs a getter
+std::vector<int> Steiner::getMST() {
+    return _MST;
+}        //needs a getter
+std::vector<bool> Steiner::getEdges_del() {
+    return _edges_del;
+}    //neeeds a getter
+void checkNets(std::ofstream &file, int idx, std::vector<std::vector<int>> horizontal, std::vector<std::vector<std::vector<int>>> vertical) {
+    for (int i = 0; i < horizontal.size(); i++) {
+        int yAxis = horizontal[i].at(0);
+        int xMax = horizontal[i].at(1);
+        int xMin = horizontal[i].at(2);
+        if (xMin > xMax) {
+            xMin = xMax;
+            xMax = horizontal[i].at(2);
+        }
+        for (int j = 0; j < vertical.size(); j++) {
+            if (j != idx) {
+                for (int k = 0; k < vertical[j].size(); k++) {
+                    int xAxis = vertical[j][k].at(0);
+                    int yMax = vertical[j][k].at(1);
+                    int yMin = vertical[j][k].at(2);
+                    if (yMin > yMax) {
+                        yMin = yMax;
+                        yMax = vertical[j][k].at(2);
+                    }
+                    if (((yAxis >= yMin) & (yAxis <= yMax)) & ((xAxis >= xMin) & (xAxis <= xMax))) {
+                        file << "set object circle at first " << xAxis << ","
+                             << yAxis << " radius char 0.3 fillstyle solid "
+                             << "fc rgb \"red\" front\n";
+                    }
+                }
+            }
+        }
+    }
+}

@@ -17,10 +17,20 @@ public:
 
     void parse(const std::string &fileName);
 
+    void createSteiner(const std::string &fileName, std::vector<Point> Nets, Boundary Bounds);
+
     void solve();
 
     void plot(const std::string &plotName);
 
+    int initializeFile(std::ofstream &of);
+
+    int plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<std::vector<int>>> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical, std::string color);
+
+    std::vector<Point> getPoints(); //needs a getter
+    std::vector<Edge> getEdges(); //needs a getter
+    std::vector<int> getMST(); //needs a getter
+    std::vector<bool> getEdges_del(); //neeeds a getter
     void outfile(const std::string &outfileName);
 
     // helper getters
@@ -94,5 +104,7 @@ private: // members
     std::vector<Edge> _init_edges;
     std::vector<int> _init_MST;
 };
+
+void checkNets(std::ofstream &file, int idx, std::vector<std::vector<int>> horizontal, std::vector<std::vector<std::vector<int>>> vertical);
 
 #endif
