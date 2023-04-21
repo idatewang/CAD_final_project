@@ -2,6 +2,7 @@
 #define _DATASTRUCTURE_H
 
 #include <vector>
+#include <stdlib.h>
 
 class Point {
 public:
@@ -46,5 +47,28 @@ public:
     int xleft, xright, ybot, ytop;
 };
 
+class Reroute {
+public:
+    Reroute(int NetNumber = 0, int V = 0, int issue = 0, int issuePointt = 0, int hhead = 0, int ttail = 0, int leftWing = 0, int rightWing = 0)
+            : netNum(NetNumber), isV(V), movingNet(issue), issuePoint(issuePointt), head(hhead), tail(ttail), lWing(leftWing), rWing(rightWing) {}
+
+    ~Reroute() {}
+
+    bool operator==(const Reroute &c1) {
+        return head == c1.head && lWing == c1.lWing && rWing == c1.rWing;
+    }
+
+    bool operator<(const Reroute &c1) {
+        int sum = (2 * abs(tail - head)) + abs(lWing - rWing);
+        int c1Sum = (2 * abs(c1.tail - c1.head)) + abs(c1.lWing - c1.rWing);
+        bool solution = (sum < c1Sum);
+        if (sum == c1Sum) {
+            solution = (abs(issuePoint - head) * abs(lWing - rWing)) < (abs(c1.issuePoint - c1.head) * abs(c1.lWing - c1.rWing));
+        }
+        return solution;
+    }
+
+    int netNum, isV, movingNet, issuePoint, head, tail, lWing, rWing;
+};
 
 #endif

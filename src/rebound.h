@@ -92,10 +92,10 @@ void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_over
 
     // 3. If there're more than one overlapping dots, figure out the critical pt closest to each line
     // figure out pts overlapping
-    vector<Point> overlapping_pts_1;
-    vector<Point> other_pts_1;
-    vector<Point> overlapping_pts_2;
-    vector<Point> other_pts_2;
+    vector <Point> overlapping_pts_1;
+    vector <Point> other_pts_1;
+    vector <Point> overlapping_pts_2;
+    vector <Point> other_pts_2;
     for (int i = 0; i < total_pts_1; ++i) {
         int x_1 = s_1->get_points()[i].x;
         int y_1 = s_1->get_points()[i].y;
@@ -175,19 +175,19 @@ void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_over
     ofstream of_1_1(s_1->get_name() + "_1.txt", ofstream::out);
     of_1_1 << "Boundary = (" << min_x_1 << "," << max_y_overlap << "), (" << max_x_1 << "," << max_y_1 << ")" << endl;
     int pt_count_1_1 = 0;
-    vector<Point> pts_1_1;
+    vector <Point> pts_1_1;
     ofstream of_1_2(s_1->get_name() + "_2.txt", ofstream::out);
     of_1_2 << "Boundary = (" << min_x_1 << "," << min_y_overlap << "), (" << min_x_overlap << "," << max_y_overlap << ")" << endl;
     int pt_count_1_2 = 0;
-    vector<Point> pts_1_2;
+    vector <Point> pts_1_2;
     ofstream of_1_3(s_1->get_name() + "_3.txt", ofstream::out);
     of_1_3 << "Boundary = (" << max_x_overlap << "," << min_y_overlap << "), (" << max_x_1 << "," << max_y_overlap << ")" << endl;
     int pt_count_1_3 = 0;
-    vector<Point> pts_1_3;
+    vector <Point> pts_1_3;
     ofstream of_1_4(s_1->get_name() + "_4.txt", ofstream::out);
     of_1_4 << "Boundary = (" << min_x_1 << "," << min_y_1 << "), (" << max_x_1 << "," << min_y_overlap << ")" << endl;
     int pt_count_1_4 = 0;
-    vector<Point> pts_1_4;
+    vector <Point> pts_1_4;
     for (int i = 0; i < other_pts_1.size(); ++i) {
         if (other_pts_1[i].y > max_y_overlap) {
             pt_count_1_1++;
@@ -224,19 +224,19 @@ void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_over
     ofstream of_2_1(s_2->get_name() + "_1.txt", ofstream::out);
     of_2_1 << "Boundary = (" << min_x_2 << "," << max_y_overlap << "), (" << max_x_2 << "," << max_y_2 << ")" << endl;
     int pt_count_2_1 = 0;
-    vector<Point> pts_2_1;
+    vector <Point> pts_2_1;
     ofstream of_2_2(s_2->get_name() + "_2.txt", ofstream::out);
     of_2_2 << "Boundary = (" << min_x_2 << "," << min_y_overlap << "), (" << min_x_overlap << "," << max_y_overlap << ")" << endl;
     int pt_count_2_2 = 0;
-    vector<Point> pts_2_2;
+    vector <Point> pts_2_2;
     ofstream of_2_3(s_2->get_name() + "_3.txt", ofstream::out);
     of_2_3 << "Boundary = (" << max_x_overlap << "," << min_y_overlap << "), (" << max_x_2 << "," << max_y_overlap << ")" << endl;
     int pt_count_2_3 = 0;
-    vector<Point> pts_2_3;
+    vector <Point> pts_2_3;
     ofstream of_2_4(s_2->get_name() + "_4.txt", ofstream::out);
     of_2_4 << "Boundary = (" << min_x_2 << "," << min_y_2 << "), (" << max_x_2 << "," << min_y_overlap << ")" << endl;
     int pt_count_2_4 = 0;
-    vector<Point> pts_2_4;
+    vector <Point> pts_2_4;
     for (int i = 0; i < other_pts_2.size(); ++i) {
         if (other_pts_2[i].y > max_y_overlap) {
             pt_count_2_1++;

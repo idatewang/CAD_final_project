@@ -11,14 +11,14 @@
 #include "Steiner.h"
 
 //PIN p0 (94,60)
-void printPins(std::ofstream &file, std::vector<Point> pin) {
+void printPins(std::ofstream &file, std::vector <Point> pin) {
     file << "NumPins = " << pin.size() << std::endl;
     for (int i = 0; i < pin.size(); i++) {
         file << "PIN p" << i << " (" << pin.at(i).x << "," << pin.at(i).y << ")" << std::endl;
     }
 }
 
-void printFile(std::ofstream &output, std::vector<std::vector<Point>> test) {
+void printFile(std::ofstream &output, std::vector <std::vector<Point>> test) {
     //std::ofstream output(temp);
     output << "Hello world!" << std::endl;
     for (int i = 0; i < test.size(); i++) {
@@ -29,9 +29,9 @@ void printFile(std::ofstream &output, std::vector<std::vector<Point>> test) {
 
 int main() {
     //Definitions
-    std::vector<std::vector<Point>> FullNetlist, TempNet;
-    std::vector<std::vector<Point>> ReleventNetlist;
-    std::vector<Boundary> RestrictedArea;
+    std::vector <std::vector<Point>> FullNetlist, TempNet;
+    std::vector <std::vector<Point>> ReleventNetlist;
+    std::vector <Boundary> RestrictedArea;
     Point p;
     Boundary area = Boundary(0, 50, 0, 50);
 
@@ -39,7 +39,7 @@ int main() {
     int numNets = 2;
     int numPins = 10;
     for (int k = 0; k < numNets; k++) {
-        std::vector<Point> TotalPoints;
+        std::vector <Point> TotalPoints;
         for (int i = 0; i < numPins; i++) {
             p.x = (rand() % 100);
             p.y = rand() % 100;
@@ -56,7 +56,7 @@ int main() {
 
     //Finding points that are inside the boundary
     for (int k = 0; k < TempNet.size(); k++) {
-        std::vector<Point> Relevent;
+        std::vector <Point> Relevent;
         for (int i = 0; i < TempNet[k].size(); i++) {
             Point check = TempNet[k].at(i);
             if ((check.x >= area.xleft) & (check.x <= area.xright) & (check.y >= area.ybot) & (check.y <= area.ytop)) {

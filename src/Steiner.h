@@ -17,7 +17,7 @@ public:
 
     void parse(const std::string &fileName);
 
-    void createSteiner(const std::string &fileName, std::vector<Point> Nets, Boundary Bounds);
+    void createSteiner(const std::string &fileName, std::vector <Point> Nets, Boundary Bounds);
 
     void solve();
 
@@ -25,16 +25,27 @@ public:
 
     int initializeFile(std::ofstream &of);
 
-    int plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<std::vector<int>>> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical, std::string color);
+    int plotMultiple(std::ofstream &file, int idx, std::vector <std::vector<std::vector < int>>
 
-    std::vector<Point> getPoints(); //needs a getter
-    std::vector<Edge> getEdges(); //needs a getter
+    > &horizontal, std::vector <std::vector<std::vector < int>>> &vertical,
+    std::string color
+    );
+
+    int plotFixed(std::ofstream &file, int idx, std::vector <std::vector<std::vector < int>>
+
+    > &horizontal, std::vector <std::vector<std::vector < int>>> &vertical,
+    std::vector <std::string> color,
+    int initialColor
+    );
+
+    std::vector <Point> getPoints(); //needs a getter
+    std::vector <Edge> getEdges(); //needs a getter
     std::vector<int> getMST(); //needs a getter
     std::vector<bool> getEdges_del(); //neeeds a getter
     void outfile(const std::string &outfileName);
 
     // helper getters
-    std::vector<Point> get_points() {
+    std::vector <Point> get_points() {
         return _points;
     }
 
@@ -49,7 +60,8 @@ public:
         _boundaryTop = top;
         _boundaryRight = right;
     }
-    void set_points(Point point){
+
+    void set_points(Point point) {
         _points.push_back(point);
     }
 
@@ -83,13 +95,13 @@ private: // members
     int _boundaryTop, _boundaryBottom;
     int _init_p;
     int _root;
-    std::vector<Point> _points;
-    std::vector<Edge> _edges;
+    std::vector <Point> _points;
+    std::vector <Edge> _edges;
     std::vector<int> _set;
     std::vector<int> _MST;
     std::vector<bool> _edges_del;
-    std::vector<std::vector<int>> _lca_place; // adj-list of index
-    std::vector<std::tuple<int, int, int>> _lca_queries; // p, p, e
+    std::vector <std::vector<int>> _lca_place; // adj-list of index
+    std::vector <std::tuple<int, int, int>> _lca_queries; // p, p, e
     std::vector<int> _lca_answer_queries; // longest e
     // tarjan -------------
     std::vector<bool> _visit;
@@ -97,17 +109,23 @@ private: // members
     std::vector<int> _par;
     std::vector<int> _rank;
     //----------------------
-    std::vector<std::tuple<int, int, int, int>> _table;
+    std::vector <std::tuple<int, int, int, int>> _table;
     std::vector<int> _table_cnt;
-    std::vector<Edge> _newE;
+    std::vector <Edge> _newE;
 
     long long _MST_cost;
     long long _MRST_cost;
     // plot ----------------
-    std::vector<Edge> _init_edges;
+    std::vector <Edge> _init_edges;
     std::vector<int> _init_MST;
 };
 
-void checkNets(std::ofstream &file, int idx, std::vector<std::vector<int>> horizontal, std::vector<std::vector<std::vector<int>>> vertical);
+void checkNets(std::ofstream &file, std::vector <std::vector<Reroute>> &errors, std::vector <std::vector<std::vector < int>>
+
+> horizontal, std::vector <std::vector<std::vector < int>>> vertical);
+
+void fixError(std::vector <std::vector<Reroute>> &errors, std::vector <std::vector<std::vector < int>>
+
+> &horizontal, std::vector <std::vector<std::vector < int>>> &vertical);
 
 #endif
