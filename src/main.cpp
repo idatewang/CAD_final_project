@@ -40,12 +40,12 @@ int main(int argc, char **argv) {
     TimeUsage timer;
     if (!handleArgument(argc, argv)) return -1;
     string fileName = argv[1];
-    Steiner st_1, st_2;
+    Steiner st_1, st_2, st_1_overlap, st_2_overlap;
     Steiner st_overlap;
 
     st_1.parse(argv[1]);
     st_2.parse(argv[2]);
-    rebound(&st_1, &st_2);
+    rebound(&st_1, &st_2, &st_1_overlap, &st_2_overlap);
     st_1.solve();
 #ifdef VERBOSE
     timer.showUsage("solve", TimeUsage::PARTIAL);

@@ -6,7 +6,7 @@
 // 4. Write the overlapping pts plus the critical pt (if possible) to a third file
 // 5. Reduce number, remove overlapping pts, rebound and split pts into four new files
 //
-// Parameter: Steiner s_1, Steiner s_2
+// Parameter: Steiner s_1, Steiner s_2, Steiner s_1_overlap, Steiner s_2_overlap
 // Output: None
 //
 
@@ -26,7 +26,7 @@ double pt_2_line(double x1, double y1, double x2, double y2, double x3, double y
     return num / den;
 }
 
-void rebound(Steiner *s_1, Steiner *s_2) {
+void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_overlap) {
     // 1. Get true boundaries for both nets
     int total_pts_1 = s_1->get_points().size();
     if (total_pts_1 == 1)
@@ -71,7 +71,7 @@ void rebound(Steiner *s_1, Steiner *s_2) {
     cout << "file 1 rebound (" << min_x_1 << "," << min_y_1 << ") (" << max_x_1 << "," << max_y_1 << ")" << endl;
     cout << "file 2 rebound (" << min_x_2 << "," << min_y_2 << ") (" << max_x_2 << "," << max_y_2 << ")" << endl;
 
-    // 2. Figure out the overlapping bound
+    // 2. Figure out the overlapping bound and set_bounds for the overlapping S objects
     double min_x_overlap;
     double min_y_overlap;
     double max_x_overlap;
@@ -87,6 +87,7 @@ void rebound(Steiner *s_1, Steiner *s_2) {
         max_x_overlap = min(max_x_1, max_x_2);
         max_y_overlap = min(max_y_1, max_y_2);
         cout << "The overlapping bound is (" << min_x_overlap << ", " << min_y_overlap << "), (" << max_x_overlap << ", " << max_y_overlap << ")." << endl;
+        s_1_overlap->set_bounds(min_x_overlap, min_y_overlap, max_x_overlap, max_y_overlap)
     }
 
     // 3. If there're more than one overlapping dots, figure out the critical pt closest to each line
@@ -153,7 +154,13 @@ void rebound(Steiner *s_1, Steiner *s_2) {
         other_pts_2.erase(other_pts_2.begin() + min_pts_ind_2);
     }
 
-    // 4. Write the overlapping pts plus the critical pt (if possible) to a third file
+    // 4. Write the overlapping pts plus the critical pt (if possible) to a third file and the S objects
+    for (int i = 0; i < overlapping_pts_1.size(); ++i) {
+        s_1_overlap->set_points(overlapping_pts_1[i]);
+    }
+    for (int i = 0; i < overlapping_pts_2.size(); ++i) {
+        s_2_overlap->set_points(overlapping_pts_2[2]);
+    }
     ofstream of_overlap(s_1->get_name() + "_" + s_2->get_name() + ".txt", ofstream::out);
     of_overlap << "Boundary = (" << min_x_overlap << "," << min_y_overlap << "), (" << max_x_overlap << "," << max_y_overlap << ")" << endl;
     of_overlap << "NumPins = " << overlapping_pts_1.size() << endl;

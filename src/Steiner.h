@@ -49,6 +49,9 @@ public:
         _boundaryTop = top;
         _boundaryRight = right;
     }
+    void set_points(Point point){
+        _points.push_back(point);
+    }
 
 private: // helper functions
     // parse ---------------------
