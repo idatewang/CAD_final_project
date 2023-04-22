@@ -18,17 +18,19 @@ bool gDoplot = true; //needed for solving
 
 int main() {
     //Definitions
-    std::vector <std::vector<Point>> FullNetlist, TempNet;
-    std::vector <std::vector<Point>> ReleventNetlist;
-    std::vector <Boundary> RestrictedArea;
+    std::vector<std::vector<Point>> FullNetlist, TempNet;
+    std::vector<std::vector<Point>> ReleventNetlist;
+    std::vector<Boundary> RestrictedArea;
     Point p;
     Boundary area = Boundary(0, 100, 0, 100);
-    const std::vector <std::string> colors = {"purple", "green", "orange", "black"};
+    const std::vector<std::string> colors = {"purple", "green", "orange", "black"};
+    const std::vector<std::string> inputNets = {"../testbench/case1", "../testbench/case2"};
     //creating a sample netlist
     int numNets = 2;
     int numPins = 10;
+    srand(time(NULL));
     for (int k = 0; k < numNets; k++) {
-        std::vector <Point> TotalPoints;
+        std::vector<Point> TotalPoints;
         for (int i = 0; i < numPins; i++) {
             p.x = (rand() % 100);
             p.y = rand() % 100;
@@ -42,13 +44,20 @@ int main() {
 
     std::cout << "TempNet: " << std::to_string(TempNet[0].at(1).x) << std::endl;
     std::cout << "FullNetlist: " << std::to_string(FullNetlist[0].at(1).x) << std::endl;
-    std::vector <Steiner> allSteiners;
-    std::vector < std::vector < std::vector < int>>> horizontal, vertical;
+    std::vector<Steiner> allSteiners;
+    std::vector<std::vector<std::vector<int>>> horizontal, vertical;
+    //from created Netlist
     for (int i = 0; i < FullNetlist.size(); i++) {
         Steiner test;
         test.createSteiner("createSt_tb", FullNetlist[i], area);
         allSteiners.push_back(test);
     }
+    // from case txt
+    // for (int i = 0; i < inputNets.size(); i++) {
+    //     Steiner test;
+    //     test.parse(inputNets.at(i));
+    //     allSteiners.push_back(test);
+    // }
 
     //multiple solves
     for (int i = 0; i < allSteiners.size(); i++) {
@@ -60,12 +69,13 @@ int main() {
     //intialize File
     int index = allSteiners[0].initializeFile(outputFile);
     int index2 = allSteiners[0].initializeFile(revisedFile);
-    std::vector <std::vector<Reroute>> errors;
+    std::vector<std::vector<Reroute>> errors;
     std::cout << "beforeplotMultiple" << std::endl;
     // index = allSteiners[1].plotMultiple(outputFile, index, horizontal, vertical, colors.at(1 % colors.size()));
     //multiple plots
     for (int i = 0; i < allSteiners.size(); i++) {
-        // std::cout << "loop " << i << std::endl;
+        std::cout << "loop " << i << std::endl;
+
         index = allSteiners[i].plotMultiple(outputFile, index, horizontal, vertical, colors.at(i % colors.size()));
     }
 

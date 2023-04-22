@@ -1,5 +1,7 @@
 # ninja log v5
-575	632	1679520523627035344	CAD_final_project	3455bf3da397fcd2
-1	62	1681172761089125129	build.ninja	81164bced6cf381f
-4	1454	1679517008548839221	CMakeFiles/CAD_final_project.dir/src/Steiner.cpp.o	e775eb57ea5923ae
-3	574	1679520523567025735	CMakeFiles/CAD_final_project.dir/src/main.cpp.o	bfb3673985bdbdf1
+851	898	1682119778876518567	CAD_final_project	9c82340459e0f210
+6	73	1682184693475339465	build.ninja	81164bced6cf381f
+1	851	1682119778825183896	CMakeFiles/CAD_final_project.dir/src/Steiner.cpp.o	c8d6bac575dfff13
+2	571	1682119778546547289	CMakeFiles/CAD_final_project.dir/src/main.cpp.o	a7706f1a647f21a4
+0	62	1682184693475339465	build.ninja	81164bced6cf381f
+0	850	1682184694331167099	CMakeFiles/CAD_final_project.dir/src/createSteiner_tb.cpp.o	3f1c578a31282312
