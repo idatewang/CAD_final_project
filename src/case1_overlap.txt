@@ -1,0 +1,9 @@
+Boundary = (0,0), (100,100)
+NumPins = 7
+PIN p0 (21,29)
+PIN p1 (80,79)
+PIN p2 (10,73)
+PIN p3 (74,61)
+PIN p4 (57,61)
+PIN p5 (15,16)
+PIN p6 (94,60)

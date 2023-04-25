@@ -9,7 +9,7 @@
 #include <vector>
 #include "Steiner.h"
 #include <tuple>
-
+#include "rebound.h"
 #include <cstring>
 #include <cstdio>
 #include "util.h"
@@ -47,17 +47,24 @@ int main() {
     std::vector<Steiner> allSteiners;
     std::vector<std::vector<std::vector<int>>> horizontal, vertical;
     //from created Netlist
-    for (int i = 0; i < FullNetlist.size(); i++) {
+//    for (int i = 0; i < FullNetlist.size(); i++) {
+//        Steiner test;
+//        test.createSteiner("createSt_tb", FullNetlist[i], area);
+//        allSteiners.push_back(test);
+//    }
+
+    // from rebound
+    vector<Steiner> overlapping_S;
+    Steiner s_1, s_2, overlapping_1, overlapping_2;
+    s_1.parse(inputNets[0]);
+    s_2.parse(inputNets[1]);
+    rebound(&s_1, &s_2, &overlapping_1, &overlapping_2);
+    //from case txt
+    for (int i = 0; i < inputNets.size(); i++) {
         Steiner test;
-        test.createSteiner("createSt_tb", FullNetlist[i], area);
+        test.parse(inputNets.at(i).substr(inputNets.at(i).find_last_of("/\\") + 1)+"_overlap.txt");
         allSteiners.push_back(test);
     }
-    // from case txt
-    // for (int i = 0; i < inputNets.size(); i++) {
-    //     Steiner test;
-    //     test.parse(inputNets.at(i));
-    //     allSteiners.push_back(test);
-    // }
 
     //multiple solves
     for (int i = 0; i < allSteiners.size(); i++) {

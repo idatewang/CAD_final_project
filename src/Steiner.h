@@ -53,6 +53,15 @@ public:
         return _name;
     }
 
+    std::vector<int> get_bounds() {
+        std::vector<int> bounds;
+        bounds.push_back(_boundaryBottom);
+        bounds.push_back(_boundaryLeft);
+        bounds.push_back(_boundaryTop);
+        bounds.push_back(_boundaryRight);
+        return bounds;
+    }
+
     // helper setters
     void set_bounds(int bottom, int left, int top, int right) {
         _boundaryBottom = bottom;

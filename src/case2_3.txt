@@ -1,0 +1,4 @@
+Boundary = (94,9), (99,89)
+NumPins = 2
+PIN p0 (95,58)
+PIN p1 (14,89)

@@ -87,7 +87,8 @@ void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_over
         max_x_overlap = min(max_x_1, max_x_2);
         max_y_overlap = min(max_y_1, max_y_2);
         cout << "The overlapping bound is (" << min_x_overlap << ", " << min_y_overlap << "), (" << max_x_overlap << ", " << max_y_overlap << ")." << endl;
-        s_1_overlap->set_bounds(min_x_overlap, min_y_overlap, max_x_overlap, max_y_overlap);
+        s_1_overlap->set_bounds(s_1->get_bounds()[0], s_1->get_bounds()[1], s_1->get_bounds()[2], s_1->get_bounds()[3]);
+        s_2_overlap->set_bounds(s_2->get_bounds()[0], s_2->get_bounds()[1], s_2->get_bounds()[2], s_2->get_bounds()[3]);
     }
 
     // 3. If there're more than one overlapping dots, figure out the critical pt closest to each line
@@ -99,12 +100,14 @@ void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_over
     for (int i = 0; i < total_pts_1; ++i) {
         int x_1 = s_1->get_points()[i].x;
         int y_1 = s_1->get_points()[i].y;
-        int x_2 = s_2->get_points()[i].x;
-        int y_2 = s_2->get_points()[i].y;
         if (x_1 > min_x_overlap && y_1 > min_y_overlap && x_1 < max_x_overlap && y_1 < max_y_overlap)
             overlapping_pts_1.push_back(s_1->get_points()[i]);
         else
             other_pts_1.push_back(s_1->get_points()[i]);
+    }
+    for (int i = 0; i < total_pts_2; ++i) {
+        int x_2 = s_2->get_points()[i].x;
+        int y_2 = s_2->get_points()[i].y;
         if (x_2 > min_x_overlap && y_2 > min_y_overlap && x_2 < max_x_overlap && y_2 < max_y_overlap)
             overlapping_pts_2.push_back(s_2->get_points()[i]);
         else
@@ -159,19 +162,22 @@ void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_over
         s_1_overlap->set_points(overlapping_pts_1[i]);
     }
     for (int i = 0; i < overlapping_pts_2.size(); ++i) {
-        s_2_overlap->set_points(overlapping_pts_2[2]);
+        s_2_overlap->set_points(overlapping_pts_2[i]);
     }
-    ofstream of_overlap(s_1->get_name() + "_" + s_2->get_name() + ".txt", ofstream::out);
-    of_overlap << "Boundary = (" << min_x_overlap << "," << min_y_overlap << "), (" << max_x_overlap << "," << max_y_overlap << ")" << endl;
-    of_overlap << "NumPins = " << overlapping_pts_1.size() << endl;
+    ofstream of_overlap_1(s_1->get_name() + "_overlap" + ".txt", ofstream::out);
+    ofstream of_overlap_2(s_2->get_name() + "_overlap" + ".txt", ofstream::out);
+    of_overlap_1 << "Boundary = (" << s_1_overlap->get_bounds()[0] << "," << s_1_overlap->get_bounds()[1] << "), (" << s_1_overlap->get_bounds()[2] << "," << s_1_overlap->get_bounds()[3] << ")" << endl;
+    of_overlap_2 << "Boundary = (" << s_2_overlap->get_bounds()[0] << "," << s_2_overlap->get_bounds()[1] << "), (" << s_2_overlap->get_bounds()[2] << "," << s_2_overlap->get_bounds()[3] << ")" << endl;
+    of_overlap_1 << "NumPins = " << overlapping_pts_1.size() << endl;
     for (int i = 0; i < overlapping_pts_1.size(); ++i)
-        of_overlap << "PIN p" << i << " (" << overlapping_pts_1[i].x << "," << overlapping_pts_1[i].y << ")" << endl;
-    of_overlap << "NumPins = " << overlapping_pts_2.size() << endl;
+        of_overlap_1 << "PIN p" << i << " (" << overlapping_pts_1[i].x << "," << overlapping_pts_1[i].y << ")" << endl;
+    of_overlap_2 << "NumPins = " << overlapping_pts_2.size() << endl;
     for (int i = 0; i < overlapping_pts_2.size(); ++i)
-        of_overlap << "PIN p" << i << " (" << overlapping_pts_2[i].x << "," << overlapping_pts_2[i].y << ")" << endl;
-    of_overlap.close();
+        of_overlap_2 << "PIN p" << i << " (" << overlapping_pts_2[i].x << "," << overlapping_pts_2[i].y << ")" << endl;
+    of_overlap_1.close();
+    of_overlap_2.close();
 
-    // 5. Reduce number, remove overlapping pts, rebound and split pts into four new files
+//     5. Reduce number, remove overlapping pts, rebound and split pts into four new files
     ofstream of_1_1(s_1->get_name() + "_1.txt", ofstream::out);
     of_1_1 << "Boundary = (" << min_x_1 << "," << max_y_overlap << "), (" << max_x_1 << "," << max_y_1 << ")" << endl;
     int pt_count_1_1 = 0;
