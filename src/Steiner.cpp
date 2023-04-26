@@ -1313,12 +1313,17 @@ int **new_array(int n, int m) {//所产生的二维数组第0行第0列不可用
 void print_grid(int **grid, int bound_x, int bound_y) {
     ofstream outputFile;
     outputFile.open("out.txt", ios::trunc);
-    for (int i = 0; i < bound_x; i++) {
-        for (int j = 0; j < bound_y; j++) {
-            cout << grid[i][j] << " ";
-            outputFile << grid[i][j] << " ";
+    for (int i = bound_y - 1; i >= 0; i--) {
+        for (int j = 0; j < bound_x; j++) {
+            if (grid[j][i] < 0) {
+                //cout << grid[j][i] << " ";
+                outputFile << grid[j][i] * -1 << " ";
+            } else {
+                //cout << grid[j][i] << "  ";
+                outputFile << grid[j][i] << " ";
+            }
         }
-        cout << endl;
+        //cout << endl;
         outputFile << endl;
     }
     outputFile.close();
@@ -1326,40 +1331,10 @@ void print_grid(int **grid, int bound_x, int bound_y) {
 
 void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<Point> pin, std::vector<Point> node, int bound_x, int bound_y, int tree_order) {
     // build 2d array
-    int** grid = new_array(bound_x,bound_y);
+    int **grid = new_array(bound_x, bound_y);
     // create sink_vector
-    vector<Point> sink_vector;
-    // for tree_order tree, go through every edge in every space and set the coord to -2
-    for (int i = 0; i < edge[0].size(); ++i) {
-        for (int j = 0; j < edge[0][i].size(); ++j) {
-            int x_1 = edge[0][i][j][0];
-            int y_1 = edge[0][i][j][1];
-            int x_2 = edge[0][i][j][2];
-            int y_2 = edge[0][i][j][3];
-            if (x_1 == x_2){
-                if (y_1 > y_2){
-                    for (int k = y_2; k <= y_1; ++k) {
-                        grid[x_1][k] = 0;
-                    }
-                } else {
-                    for (int k = y_1; k <= y_2; ++k) {
-                        grid[x_1][k] = 0;
-                    }
-                }
-            }
-            if (y_1 == y_2){
-                if (x_1 > x_2){
-                    for (int k = x_2; k <= x_1; ++k) {
-                        grid[k][y_1] = 0;
-                    }
-                } else {
-                    for (int k = x_1; k <= x_2; ++k) {
-                        grid[k][y_1] = 0;
-                    }
-                }
-            }
-        }
-    }
+    vector<Position> sink_vector;
+
     // for all other trees, go through every edge in every space and set the coord to 1
     for (int i = 0; i < edge[1].size(); ++i) {
         for (int j = 0; j < edge[1][i].size(); ++j) {
@@ -1367,58 +1342,200 @@ void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::
             int y_1 = edge[1][i][j][1];
             int x_2 = edge[1][i][j][2];
             int y_2 = edge[1][i][j][3];
-            if (x_1 == x_2){
-                if (y_1 > y_2){
-                    for (int k = y_2; k <= y_1; ++k) {
-                        grid[x_1][k] = 1;
-                    }
-                } else {
-                    for (int k = y_1; k <= y_2; ++k) {
-                        grid[x_1][k] = 1;
-                    }
+            if (x_1 == x_2) {
+                for (int k = y_1; k <= y_2; ++k) {
+                    grid[x_1][k] = 1;
                 }
             }
-            if (y_1 == y_2){
-                if (x_1 > x_2){
-                    for (int k = x_2; k <= x_1; ++k) {
-                        grid[k][y_1] = 1;
-                    }
-                } else {
-                    for (int k = x_1; k <= x_2; ++k) {
-                        grid[k][y_1] = 1;
-                    }
+            if (y_1 == y_2) {
+                for (int k = x_1; k <= x_2; ++k) {
+                    grid[k][y_1] = 1;
                 }
             }
         }
     }
-    print_grid(grid,bound_x,bound_y);
+
+    // for tree_order tree, go through every edge in every space and set the coord to -2
+    for (int i = 0; i < edge[0].size(); ++i) {
+        for (int j = 0; j < edge[0][i].size(); ++j) {
+            int x_1 = edge[0][i][j][0];
+            int y_1 = edge[0][i][j][1];
+            int x_2 = edge[0][i][j][2];
+            int y_2 = edge[0][i][j][3];
+            if (x_1 == x_2) {
+                for (int k = y_1; k <= y_2; ++k) {
+                    grid[x_1][k] = -2;
+                }
+            }
+            if (y_1 == y_2) {
+                for (int k = x_1; k <= x_2; ++k) {
+                    grid[k][y_1] = -2;
+                }
+            }
+        }
+    }
 
     // mark intersections to be a 2
+    for (int i = 0; i < intersect.size(); ++i) {
+        grid[intersect[i].x][intersect[i].y] = 2;
+    }
+
     // for tree_order tree, mark pin to be -4
+    for (int i = 0; i < pin.size(); ++i) {
+        grid[pin[i].x][pin[i].y] = -4;
+    }
     // for tree_order tree, mark node to be -5
+    for (int i = 0; i < node.size(); ++i) {
+        grid[node[i].x][node[i].y] = -5;
+    }
     // create delete_path vector
+    vector<vector<Position>> delete_path;
     // send delete_path to mark_delete for each intersection with pin, node as finish
-    // set both paths to 2
-    // set last element in both paths to -1
+    for (int i = 0; i < intersect.size(); ++i) {
+        Position start(intersect[i].x, intersect[i].y);
+        mark_delete(grid, start, bound_x, bound_y, delete_path);
+    }
+    // set paths to 2
+    for (int i = 0; i < delete_path.size(); ++i) {
+        for (int j = 0; j < delete_path[i].size(); ++j) {
+            int x = delete_path[i][j].row;
+            int y = delete_path[i][j].col;
+            grid[x][y] = 2;
+        }
+        // set last element in paths to -1
+        int last_element = delete_path[i].size() - 1;
+        grid[delete_path[i][last_element].row][delete_path[i][last_element].col] = -1;
+    }
     // check grid to construct sink_vector with -2 value
+    for (int i = 0; i < bound_x; ++i) {
+        for (int j = 0; j < bound_y; ++j) {
+            if (grid[i][j] == -2) {
+                sink_vector.emplace_back(i, j);
+            }
+        }
+    }
     // create island vector
+    vector<Position> island;
     // for every island pin and node that has value -1, send source_propagate as start
-    // remove path from sink_vector
-    // create min_route and min_path, route and path
-    // call FindPath, send every Position in island vector as start and every sink_vector as finish, return minimum PathLen and path
-    // after finding the min_route, change all of its value to -2
-    // adding min_route to sink_vector
+    for (int i = 0; i < node.size(); ++i) {
+        int x = node[i].x;
+        int y = node[i].y;
+        if (grid[x][y] == -1) {
+            Position start(x, y);
+            vector<Position> path;
+            source_propagate(grid, start, bound_x, bound_y, path);
+            // remove path from sink_vector_cp
+            vector<Position> sink_vector_cp = sink_vector;
+            for (int j = 0; j < path.size(); ++j) {
+                for (int k = 0; k < sink_vector_cp.size(); ++k) {
+                    if (sink_vector_cp[k] == path[j]) {
+                        sink_vector_cp.erase(sink_vector_cp.begin() + k);
+                        break;
+                    }
+                }
+            }
+            // create min_route and min_path, route and path
+            int min_path = INT32_MAX;
+            int wirelength;
+            Position* min_route;
+            Position* route_path;
+            // call FindPath, send every Position in island vector as start and every sink_vector as finish, return minimum PathLen and path
+            for (int j = 0; j < path.size(); ++j) {
+                for (int k = 0; k < sink_vector_cp.size(); ++k) {
+                    FindPath(grid,path[i],sink_vector_cp[k],wirelength,route_path,bound_x,bound_y);
+                }
+            }
+        }
+        // after finding the min_route, change all of its value to -2
+        // adding min_route to sink_vector
+    }
+    print_grid(grid, bound_x, bound_y);
 
+    // check if there's any position that are marked 2 in other nets and restore them to 1
 }
 
-void mark_delete(int **grid, Position start, vector<int> finish, vector<vector<Position>> *path) {
-    // determine wire running horizontal or vertical by looking at adj blocks (if not 1)
-    // propagate on both directions until one of the finishes is met and record the path includes finish
+void mark_delete(int **grid, Position start, int bound_x, int bound_y, vector<vector<Position>> &path) {
+    Position offset[4];
+    offset[0].row = 0;
+    offset[0].col = 1;//右
+    offset[1].row = 1;
+    offset[1].col = 0;//下
+    offset[2].row = 0;
+    offset[2].col = -1;//左
+    offset[3].row = -1;
+    offset[3].col = 0;//上
+    int NumOfNbrs = 4;//相邻方格数
+    Position here, nbr;
+    for (int i = 0; i < NumOfNbrs; i++) {
+        here.row = start.row;
+        here.col = start.col;
+        vector<Position> individual_path;
+        while (true) {
+            // offset position
+            nbr.row = here.row + offset[i].row;
+            nbr.col = here.col + offset[i].col;
+            // check if on boundary
+            if (nbr.row == -1 || nbr.row == bound_x || nbr.col == -1 || nbr.col == bound_y) {
+                break;
+            }
+            // check if a node or a pin is reached
+            if (grid[nbr.row][nbr.col] == -4 || grid[nbr.row][nbr.col] == -5) {
+                individual_path.emplace_back(nbr.row, nbr.col);
+                break;
+            }
+            // check if the path is not empty or other nets
+            if (grid[nbr.row][nbr.col] != 0 && grid[nbr.row][nbr.col] != 1) {
+                individual_path.emplace_back(nbr.row, nbr.col);
+                here.row = nbr.row;
+                here.col = nbr.col;
+            } else {
+                break;
+            }
 
+        }
+        if (!individual_path.empty()) {
+            path.push_back(individual_path);
+        }
+    }
 }
 
-void source_propagate(int **grid, Position start, vector<Position> *path) {
+void source_propagate(int **grid, Position start, int bound_x, int bound_y, vector<Position> &path) {
     // looks all four dirs and if the value == -2, record in path, change value to -1
+    Position offset[4];
+    offset[0].row = 0;
+    offset[0].col = 1;//右
+    offset[1].row = 1;
+    offset[1].col = 0;//下
+    offset[2].row = 0;
+    offset[2].col = -1;//左
+    offset[3].row = -1;
+    offset[3].col = 0;//上
+    int NumOfNbrs = 4;//相邻方格数
+    Position here, nbr;
+    here.row = start.row;
+    here.col = start.col;
+    for (int i = 0; i < NumOfNbrs; i++) {
+        while (true) {
+            // offset position
+            nbr.row = here.row + offset[i].row;
+            nbr.col = here.col + offset[i].col;
+            // check if on boundary
+            if (nbr.row == -1 || nbr.row == bound_x || nbr.col == -1 || nbr.col == bound_y) {
+                break;
+            }
+            // check if location is -2
+            if (grid[nbr.row][nbr.col] == -2) {
+                path.emplace_back(nbr.row, nbr.col);
+                grid[nbr.row][nbr.col] = 8;
+                here.row = nbr.row;
+                here.col = nbr.col;
+            } else {
+                break;
+            }
+
+        }
+    }
+
 }
 
 bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position *&path, int n, int m) {//计算从起始位置start到目标位置finish的最短布线路径

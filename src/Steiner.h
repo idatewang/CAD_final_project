@@ -133,10 +133,11 @@ void checkNets(std::ofstream &file, std::vector<Reroute> &errors, std::vector<st
 
 // void fixError(std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList, int buffer);
 
-void mark_delete(int **grid, Position start, vector<int> finish, vector<vector<Position>> *path);
+void mark_delete(int **grid, Position start, int bound_x, int bound_y, vector<vector<Position>> &path);
 
-void source_propagate(int **grid, Position start, vector<Position> *path);
+void source_propagate(int **grid, Position start, int bound_x, int bound_y, vector<Position> &path);
 
 void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<Point> pin, std::vector<Point> node, int bound_x, int bound_y, int tree_order);
 
+bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position *&path, int n, int m);
 #endif

@@ -13,6 +13,9 @@ public:
     Position() : row(), col() {}
 
     Position(int row, int col) : row(row), col(col) {}
+    bool operator==(const Position &p1) const {
+        return row == p1.row && col== p1.col;
+    }
 };
 
 
