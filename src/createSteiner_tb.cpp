@@ -104,15 +104,22 @@ int main() {
 
         index = allSteiners[i].plotMultiple(outputFile, index, edgeList, nodeList, colors.at(i % colors.size()));
     }
-
+    std::vector<std::vector<std::vector<std::vector<int>>>> edgeList_cp = edgeList;
 
     //assumes input to be a vector of ints with an index compared with a vector of a vector of ints
     checkNets(outputFile, errors, edgeList);
+    for (int i = 0; i < allSteiners.size(); ++i) {
+        int bound_x = allSteiners[i].get_bounds()[2] - allSteiners[i].get_bounds()[0];
+        int bound_y = allSteiners[i].get_bounds()[3] - allSteiners[i].get_bounds()[1];
+        map_generate(edgeList_cp,errors,allSteiners[i].getPoints(),nodeList[i],bound_x,bound_y,i);
+        break;
+    }
     for (int i = 0; i < allSteiners.size(); i++) {
         // std::cout << "loop revised " << i << std::endl;
 
         index2 = allSteiners[i].plotFixed(revisedFile, index2, edgeList, colors, i);
     }
+
     //removes safe spaces that do not have a point
     for (int i = 0; i < allSteiners.size(); i++) {
         std::cout << "loop revised " << i << std::endl;

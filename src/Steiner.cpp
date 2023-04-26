@@ -1311,21 +1311,88 @@ int **new_array(int n, int m) {//所产生的二维数组第0行第0列不可用
 }
 
 void print_grid(int **grid, int bound_x, int bound_y) {
-    for (int i = 1; i <= bound_x; i++) {
-        for (int j = 1; j <= bound_y; j++) {
-            Position pos(i, j);
+    ofstream outputFile;
+    outputFile.open("out.txt", ios::trunc);
+    for (int i = 0; i < bound_x; i++) {
+        for (int j = 0; j < bound_y; j++) {
             cout << grid[i][j] << " ";
+            outputFile << grid[i][j] << " ";
         }
         cout << endl;
+        outputFile << endl;
     }
-
+    outputFile.close();
 }
 
-void map_generate(std::vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<std::vector<Point>> pin, std::vector<std::vector<Point>>, int bound_x, int bound_y, int tree_order) {
+void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<Point> pin, std::vector<Point> node, int bound_x, int bound_y, int tree_order) {
     // build 2d array
+    int** grid = new_array(bound_x,bound_y);
     // create sink_vector
+    vector<Point> sink_vector;
     // for tree_order tree, go through every edge in every space and set the coord to -2
+    for (int i = 0; i < edge[0].size(); ++i) {
+        for (int j = 0; j < edge[0][i].size(); ++j) {
+            int x_1 = edge[0][i][j][0];
+            int y_1 = edge[0][i][j][1];
+            int x_2 = edge[0][i][j][2];
+            int y_2 = edge[0][i][j][3];
+            if (x_1 == x_2){
+                if (y_1 > y_2){
+                    for (int k = y_2; k <= y_1; ++k) {
+                        grid[x_1][k] = 0;
+                    }
+                } else {
+                    for (int k = y_1; k <= y_2; ++k) {
+                        grid[x_1][k] = 0;
+                    }
+                }
+            }
+            if (y_1 == y_2){
+                if (x_1 > x_2){
+                    for (int k = x_2; k <= x_1; ++k) {
+                        grid[k][y_1] = 0;
+                    }
+                } else {
+                    for (int k = x_1; k <= x_2; ++k) {
+                        grid[k][y_1] = 0;
+                    }
+                }
+            }
+        }
+    }
     // for all other trees, go through every edge in every space and set the coord to 1
+    for (int i = 0; i < edge[1].size(); ++i) {
+        for (int j = 0; j < edge[1][i].size(); ++j) {
+            int x_1 = edge[1][i][j][0];
+            int y_1 = edge[1][i][j][1];
+            int x_2 = edge[1][i][j][2];
+            int y_2 = edge[1][i][j][3];
+            if (x_1 == x_2){
+                if (y_1 > y_2){
+                    for (int k = y_2; k <= y_1; ++k) {
+                        grid[x_1][k] = 1;
+                    }
+                } else {
+                    for (int k = y_1; k <= y_2; ++k) {
+                        grid[x_1][k] = 1;
+                    }
+                }
+            }
+            if (y_1 == y_2){
+                if (x_1 > x_2){
+                    for (int k = x_2; k <= x_1; ++k) {
+                        grid[k][y_1] = 1;
+                    }
+                } else {
+                    for (int k = x_1; k <= x_2; ++k) {
+                        grid[k][y_1] = 1;
+                    }
+                }
+            }
+        }
+    }
+    print_grid(grid,bound_x,bound_y);
+
     // mark intersections to be a 2
     // for tree_order tree, mark pin to be -4
     // for tree_order tree, mark node to be -5

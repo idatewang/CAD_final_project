@@ -48,12 +48,18 @@ public:
         return _name;
     }
 
-    std::vector<int> get_bounds() {
-        std::vector<int> bounds;
-        bounds.push_back(_boundaryBottom);
-        bounds.push_back(_boundaryLeft);
-        bounds.push_back(_boundaryTop);
-        bounds.push_back(_boundaryRight);
+    int* get_bounds() {
+//        std::vector<int> bounds;
+//        bounds.push_back(_boundaryBottom);
+//        bounds.push_back(_boundaryLeft);
+//        bounds.push_back(_boundaryTop);
+//        bounds.push_back(_boundaryRight);
+        int bounds[4];
+        bounds[0] = _boundaryBottom;
+        bounds[1] = _boundaryLeft;
+        bounds[2] = _boundaryTop;
+        bounds[3] = _boundaryRight;
+        return bounds;
     }
 
     // helper setters
@@ -131,6 +137,6 @@ void mark_delete(int **grid, Position start, vector<int> finish, vector<vector<P
 
 void source_propagate(int **grid, Position start, vector<Position> *path);
 
-void map_generate(std::vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<std::vector<Point>> pin, std::vector<std::vector<Point>>, int bound_x, int bound_y, int tree_order);
+void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<Point> pin, std::vector<Point> node, int bound_x, int bound_y, int tree_order);
 
 #endif
