@@ -1,2 +1,0 @@
-Boundary = (8,9), (94,9)
-NumPins = 0

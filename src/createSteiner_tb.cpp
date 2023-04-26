@@ -9,7 +9,7 @@
 #include <vector>
 #include "Steiner.h"
 #include <tuple>
-#include "rebound.h"
+
 #include <cstring>
 #include <cstdio>
 #include "util.h"
@@ -23,12 +23,14 @@ int main() {
     std::vector<Boundary> RestrictedArea;
     Point p;
     Boundary area = Boundary(0, 100, 0, 100);
-    const std::vector<std::string> colors = {"purple", "green", "orange", "black"};
+    // const std::vector<std::string> colors = {"purple", "green", "orange", "black"};
+    const std::vector<std::string> colors = {"red", "orange", "yellow", "green", "blue", "violet", "black", "brown"};
     const std::vector<std::string> inputNets = {"../testbench/case1", "../testbench/case2"};
     //creating a sample netlist
-    int numNets = 2;
+    int numNets = 3;
     int numPins = 10;
-    srand(time(NULL));
+    //srand(time(NULL));
+
     for (int k = 0; k < numNets; k++) {
         std::vector<Point> TotalPoints;
         for (int i = 0; i < numPins; i++) {
@@ -39,30 +41,45 @@ int main() {
         FullNetlist.push_back(TotalPoints);
     }
     TempNet = FullNetlist;
+    for (int i = 0; i < TempNet.size(); i++) {
+        for (int j = 0; j < TempNet[i].size(); j++) {
+            std::cout << std::to_string(TempNet[i].at(j).x) << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl << std::endl;
+
+    TempNet.erase(TempNet.begin());
     //erasing a single element from a vector of vectors
-    //TempNet[0].erase(TempNet[0].begin() + 1);
+    for (int i = 0; i < TempNet.size(); i++) {
+        for (int j = 0; j < TempNet[i].size(); j++) {
+            std::cout << std::to_string(TempNet[i].at(j).x) << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "TempNet: " << std::to_string(TempNet[0].at(1).x) << std::endl;
+    TempNet[0].erase(TempNet[0].begin() + 1);
 
     std::cout << "TempNet: " << std::to_string(TempNet[0].at(1).x) << std::endl;
     std::cout << "FullNetlist: " << std::to_string(FullNetlist[0].at(1).x) << std::endl;
+
+
     std::vector<Steiner> allSteiners;
     std::vector<std::vector<std::vector<int>>> horizontal, vertical;
-    //from created Netlist
-//    for (int i = 0; i < FullNetlist.size(); i++) {
-//        Steiner test;
-//        test.createSteiner("createSt_tb", FullNetlist[i], area);
-//        allSteiners.push_back(test);
-//    }
 
-    // from rebound
-    vector<Steiner> overlapping_S;
-    Steiner s_1, s_2, overlapping_1, overlapping_2;
-    s_1.parse(inputNets[0]);
-    s_2.parse(inputNets[1]);
-    rebound(&s_1, &s_2, &overlapping_1, &overlapping_2);
-    //from case txt
+    std::vector<std::vector<std::vector<std::vector<int>>>> edgeList;
+    std::vector<std::vector<Point>> nodeList;
+
+    // //from created Netlist
+    // for (int i = 0; i < FullNetlist.size(); i++) {
+    // Steiner test;
+    // test.createSteiner("createSt_tb", FullNetlist[i], area);
+    // allSteiners.push_back(test);
+    // }
+    // from case txt
     for (int i = 0; i < inputNets.size(); i++) {
         Steiner test;
-        test.parse(inputNets.at(i).substr(inputNets.at(i).find_last_of("/\\") + 1)+"_overlap.txt");
+        test.parse(inputNets.at(i));
         allSteiners.push_back(test);
     }
 
@@ -73,41 +90,42 @@ int main() {
 
     std::ofstream outputFile("createSt_tb.plt", std::ofstream::out);
     std::ofstream revisedFile("createSt_tb2.plt", std::ofstream::out);
+    std::ofstream revisedAgainFile("createSt_tb3.plt", std::ofstream::out);
     //intialize File
     int index = allSteiners[0].initializeFile(outputFile);
     int index2 = allSteiners[0].initializeFile(revisedFile);
-    std::vector<std::vector<Reroute>> errors;
+    int index3 = allSteiners[0].initializeFile(revisedAgainFile);
+    std::vector<Reroute> errors;
     std::cout << "beforeplotMultiple" << std::endl;
-    // index = allSteiners[1].plotMultiple(outputFile, index, horizontal, vertical, colors.at(1 % colors.size()));
+    // index = allSteiners[1].plotMultiple(outputFile, index, edgeList, colors.at(1 % colors.size()));
     //multiple plots
     for (int i = 0; i < allSteiners.size(); i++) {
         std::cout << "loop " << i << std::endl;
 
-        index = allSteiners[i].plotMultiple(outputFile, index, horizontal, vertical, colors.at(i % colors.size()));
+        index = allSteiners[i].plotMultiple(outputFile, index, edgeList, nodeList, colors.at(i % colors.size()));
     }
 
 
     //assumes input to be a vector of ints with an index compared with a vector of a vector of ints
-    checkNets(outputFile, errors, horizontal, vertical);
+    checkNets(outputFile, errors, edgeList);
+    for (int i = 0; i < allSteiners.size(); i++) {
+        // std::cout << "loop revised " << i << std::endl;
 
-    fixError(errors, horizontal, vertical);
+        index2 = allSteiners[i].plotFixed(revisedFile, index2, edgeList, colors, i);
+    }
+    //removes safe spaces that do not have a point
+    for (int i = 0; i < allSteiners.size(); i++) {
+        std::cout << "loop revised " << i << std::endl;
+
+        allSteiners[i].cleanNetlist(edgeList, i);
+    }
     //revisedFile plot
     for (int i = 0; i < allSteiners.size(); i++) {
         // std::cout << "loop revised " << i << std::endl;
 
-        index2 = allSteiners[i].plotFixed(revisedFile, index2, horizontal, vertical, colors, i);
+        index2 = allSteiners[i].plotFixed(revisedAgainFile, index3, edgeList, colors, i);
     }
 
-    // Reroute x = Reroute(0, 0, 0, 0, 10, 0, 10, 0);
-    // Reroute y = Reroute(0, 0, 0, 0, 10, 0, 10, 5);
-    // if(x < y)
-    // {
-    // std::cout << "This is incorrect" << std::endl;
-    // }
-    // else
-    // {
-    // std::cout << "Function is working" << std::endl;
-    // }
     outputFile << "plot 1000000000" << std::endl;
     outputFile << "pause -1 'Press any key'" << std::endl;
     outputFile.close();
@@ -115,8 +133,11 @@ int main() {
     revisedFile << "plot 1000000000" << std::endl;
     revisedFile << "pause -1 'Press any key'" << std::endl;
     revisedFile.close();
-    fixError(errors, horizontal, vertical);
-    // std::vector<int> tempMST = allSteiners[0].getMST();
-    // std::cout << tempMST.size() << std::endl;
+
+    revisedAgainFile << "plot 1000000000" << std::endl;
+    revisedAgainFile << "pause -1 'Press any key'" << std::endl;
+    revisedAgainFile.close();
+    // // std::vector<int> tempMST = allSteiners[0].getMST();
+    // // std::cout << tempMST.size() << std::endl;
     return 0;
 }

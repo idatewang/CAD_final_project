@@ -1,8 +1,8 @@
 //
 // This function:
 // 1. Get true boundaries for both nets
-// 2. Figure out the overlapping bound (if pts larger then 1)
-// 3. If there're more than one overlapping dots, figure out the critical pt closest to each line
+// 2. Figure out the overlapping bound (if pts larger than 1)
+// 3. If there are more than one overlapping dots, figure out the critical pt closest to each line
 // 4. Write the overlapping pts plus the critical pt (if possible) to a third file
 // 5. Reduce number, remove overlapping pts, rebound and split pts into four new files
 //
@@ -91,7 +91,7 @@ void rebound(Steiner *s_1, Steiner *s_2, Steiner *s_1_overlap, Steiner *s_2_over
         s_2_overlap->set_bounds(s_2->get_bounds()[0], s_2->get_bounds()[1], s_2->get_bounds()[2], s_2->get_bounds()[3]);
     }
 
-    // 3. If there're more than one overlapping dots, figure out the critical pt closest to each line
+    // 3. If there are more than one overlapping dots, figure out the critical pt closest to each line
     // figure out pts overlapping
     vector<Point> overlapping_pts_1;
     vector<Point> other_pts_1;

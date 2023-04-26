@@ -6,7 +6,6 @@
 #include <set>
 #include <numeric>
 #include <cassert>
-
 #include "util.h"
 #include "Steiner.h"
 
@@ -566,7 +565,8 @@ int Steiner::initializeFile(std::ofstream &of) {
     return idx;
 }
 
-int Steiner::plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<std::vector<int>>> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical, std::string color) {
+int Steiner::plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList,
+                          std::vector<std::vector<Point>> &nodeList, std::string color) {
     // point
     for (int i = 0; i < _init_p; ++i) {
 
@@ -597,21 +597,25 @@ int Steiner::plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<
         // << p2.x << "," << p2.y
         // << " nohead lc rgb \"blue\" lw 1 front\n";
     }
+    std::vector<Point> tempNodes;
     // s-point
     for (unsigned i = _init_p; i < _points.size(); ++i) {
+        tempNodes.push_back(_points.at(i));
         file << "set object circle at first " << _points[i].x << ","
              << _points[i].y << " radius char 0.3 fillstyle solid "
              << "fc rgb \"yellow\" front\n";
     }
-    std::vector<std::vector<int>> horizontalNet;
-    std::vector<std::vector<int>> verticalNet;
+    std::vector<std::vector<int>> tempSpace;
     // RST
     for (unsigned i = 0; i < _MST.size(); ++i) {
         //if (_edges_del[_MST[i]]) continue;
         Point &p1 = _points[_edges[_MST[i]].p1];
         Point &p2 = _points[_edges[_MST[i]].p2];
+        bool leftRightShift = false;
+        bool topDownShift = false;
         if (p1.x != p2.x) {
-            std::vector<int> tempH;
+            leftRightShift = true;
+            std::vector<int> tempHEdge;
             file << "set arrow " << idx++ << " from "
                  << p1.x << "," << p1.y << " to "
                  << p2.x << "," << p1.y
@@ -619,18 +623,23 @@ int Steiner::plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<
                  << color
                  << "\" lw 1.5 back\n";
             //checkEdges << "H " << p1.y << " " << p1.x << " " << p2.x << std::endl;
-            tempH.push_back(p1.y);
-            if (p1.x > p2.x) {
-                tempH.push_back(p2.x);
-                tempH.push_back(p1.x);
+
+            if (p1.x < p2.x) {
+                tempHEdge.push_back(p1.x);
+                tempHEdge.push_back(p1.y);
+                tempHEdge.push_back(p2.x);
+                tempHEdge.push_back(p1.y);
             } else {
-                tempH.push_back(p1.x);
-                tempH.push_back(p2.x);
+                tempHEdge.push_back(p2.x);
+                tempHEdge.push_back(p1.y);
+                tempHEdge.push_back(p1.x);
+                tempHEdge.push_back(p1.y);
             }
-            horizontalNet.push_back(tempH);
+            tempSpace.push_back(tempHEdge);
         }
         if (p1.y != p2.y) {
-            std::vector<int> tempV;
+            topDownShift = true;
+            std::vector<int> tempVEdge;
             file << "set arrow " << idx++ << " from "
                  << p2.x << "," << p1.y << " to "
                  << p2.x << "," << p2.y
@@ -638,19 +647,29 @@ int Steiner::plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<
                  << color
                  << "\" lw 1.5 back\n";
             // checkEdges << "V " << p2.x << " " << p1.y << " " << p2.y << std::endl;
-            tempV.push_back(p2.x);
-            if (p1.y > p2.y) {
-                tempV.push_back(p2.y);
-                tempV.push_back(p1.y);
+
+            if (p1.y < p2.y) {
+                tempVEdge.push_back(p2.x);
+                tempVEdge.push_back(p1.y);
+                tempVEdge.push_back(p2.x);
+                tempVEdge.push_back(p2.y);
             } else {
-                tempV.push_back(p1.y);
-                tempV.push_back(p2.y);
+                tempVEdge.push_back(p2.x);
+                tempVEdge.push_back(p2.y);
+                tempVEdge.push_back(p2.x);
+                tempVEdge.push_back(p1.y);
             }
-            verticalNet.push_back(tempV);
+            tempSpace.push_back(tempVEdge);
+        }
+        if (topDownShift & leftRightShift) {
+            Point tempP = Point(p2.x, p1.y);
+            tempNodes.push_back(tempP);
         }
     }
-    horizontal.push_back(horizontalNet);
-    vertical.push_back(verticalNet);
+    nodeList.push_back(tempNodes);
+    std::vector<std::vector<std::vector<int>>> tempNet;
+    tempNet.push_back(tempSpace);
+    edgeList.push_back(tempNet);
     return idx;
 }
 
@@ -666,51 +685,158 @@ std::vector<int> Steiner::getMST() {
 std::vector<bool> Steiner::getEdges_del() {
     return _edges_del;
 }    //neeeds a getter
-void checkNets(std::ofstream &file, std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<int>>> horizontal, std::vector<std::vector<std::vector<int>>> vertical) {
-    for (int a = 0; a < horizontal.size(); a++) {
-        for (int i = 0; i < horizontal[a].size(); i++) {
-            int yAxis = horizontal[a][i].at(0);
-            int xMax = horizontal[a][i].at(1);
-            int xMin = horizontal[a][i].at(2);
-            if (xMin > xMax) {
-                xMin = xMax;
-                xMax = horizontal[a][i].at(2);
-            }
-            for (int j = 0; j < vertical.size(); j++) {
-                if (j != a) {
-                    for (int k = 0; k < vertical[j].size(); k++) {
-                        int xAxis = vertical[j][k].at(0);
-                        int yMax = vertical[j][k].at(1);
-                        int yMin = vertical[j][k].at(2);
-                        if (yMin > yMax) {
-                            yMin = yMax;
-                            yMax = vertical[j][k].at(2);
-                        }
-                        if (((yAxis >= yMin) & (yAxis <= yMax)) & ((xAxis >= xMin) & (xAxis <= xMax))) {
-                            file << "set object circle at first " << xAxis << ","
-                                 << yAxis << " radius char 0.3 fillstyle solid "
-                                 << "fc rgb \"red\" front\n";
-                            std::vector<Reroute> temp;
-                            Reroute left = Reroute(a, 0, j, xAxis, xMin, xMax, yAxis, yAxis);
-                            Reroute right = Reroute(a, 0, j, xAxis, xMax, xMin, yAxis, yAxis);
-                            Reroute bottom = Reroute(j, 1, a, yAxis, yMin, yMax, xAxis, xAxis);
-                            Reroute top = Reroute(j, 1, a, yAxis, yMax, yMin, xAxis, xAxis);
+void checkNets(std::ofstream &file, std::vector<Reroute> &errors, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList) {
+    for (int a = 0; a < edgeList.size(); a++) {
+        for (int b = 0; b < edgeList[a].size(); b++) {
+            for (int c = 0; c < edgeList[a][b].size(); c++) {
+                bool cDecrement = false;
+                int x1 = edgeList[a][b][c].at(0);
+                int y1 = edgeList[a][b][c].at(1);
+                int x2 = edgeList[a][b][c].at(2);
+                int y2 = edgeList[a][b][c].at(3);
+                for (int i = a; i < edgeList.size(); i++) {
+                    if (a != i) {
+                        for (int j = 0; j < edgeList[i].size(); j++) {
+                            for (int k = 0; k < edgeList[i][j].size(); k++) {
+                                int sampleX1 = edgeList[i][j][k].at(0);
+                                int sampleY1 = edgeList[i][j][k].at(1);
+                                int sampleX2 = edgeList[i][j][k].at(2);
+                                int sampleY2 = edgeList[i][j][k].at(3);
+                                if (((x1 == x2) & (sampleX1 == sampleX2) & (x1 == sampleX1)) & (((y1 >= sampleY1) & (y2 <= sampleY2)) | ((sampleY1 >= y1) & (sampleY2 <= y2)))) {
+                                } else if (((y1 == y2) & (sampleY1 == sampleY2) & (y1 == sampleY1)) & (((x1 >= sampleX1) & (x2 <= sampleX2)) | ((sampleX1 >= x1) & (sampleX2 <= x2)))) {
+                                } else if (((sampleX1 >= x1) & (sampleX2 <= x2) & (y1 >= sampleY1) & (y2 <= sampleY2)) | ((x1 >= sampleX1) & (x2 <= sampleX2) & (sampleY1 >= y1) & (sampleY2 <= y2))) {
+                                    if (x1 == x2) {
+                                        file << "set object circle at first " << x1 << ","
+                                             << sampleY1 << " radius char 0.3 fillstyle solid "
+                                             << "fc rgb \"red\" front\n";
+                                        Reroute tempVerror = Reroute{a, i, x1, sampleY1};
+                                        errors.push_back(tempVerror);
 
-                            temp.push_back(left);
-                            temp.push_back(right);
-                            temp.push_back(bottom);
-                            temp.push_back(top);
-                            errors.push_back(temp);
+                                    } else if (y1 == y2) {
+                                        file << "set object circle at first " << sampleX1 << ","
+                                             << y1 << " radius char 0.3 fillstyle solid "
+                                             << "fc rgb \"red\" front\n";
+                                        Reroute tempHerror = Reroute{i, a, sampleX1, y1};
+                                        errors.push_back(tempHerror);
+                                    }
+                                    std::vector<std::vector<int>> moveSpace;
+                                    moveSpace.push_back({sampleX2, sampleY2, sampleX2, sampleY2});
+                                    edgeList[i][j].erase(edgeList[i][j].begin() + k);
+                                    k--;
+                                    int movedEdges = 0;
+                                    for (int m = 0; m < moveSpace.size(); m++) {
+                                        int mX1 = moveSpace[m].at(0);
+                                        int mY1 = moveSpace[m].at(1);
+                                        int mX2 = moveSpace[m].at(2);
+                                        int mY2 = moveSpace[m].at(3);
+                                        for (int n = 0; n < edgeList[i][j].size(); n++) {
+                                            int nX1 = edgeList[i][j][n].at(0);
+                                            int nY1 = edgeList[i][j][n].at(1);
+                                            int nX2 = edgeList[i][j][n].at(2);
+                                            int nY2 = edgeList[i][j][n].at(3);
+                                            if (((mX1 == mX2) & (nX1 == nX2) & (mX1 == nX1)) & (((mY2 >= nY1) & (mY2 <= nY2)) | ((nY2 >= mY1) & (nY2 <= mY2)))) {
+                                                moveSpace.push_back(edgeList[i][j].at(n));
+                                                edgeList[i][j].erase(edgeList[i][j].begin() + n);
+                                                if (n <= k) {
+                                                    k--;
+                                                    movedEdges++;
+                                                }
+                                                n--;
+                                            } else if (((mY1 == mY2) & (nY1 == nY2) & (mY1 == nY1)) & (((mX2 >= nX1) & (mX2 <= nX2)) | ((nX2 >= mX1) & (nX2 <= mX2)))) {
+                                                moveSpace.push_back(edgeList[i][j].at(n));
+                                                edgeList[i][j].erase(edgeList[i][j].begin() + n);
+                                                if (n <= k) {
+                                                    k--;
+                                                    movedEdges++;
+                                                }
+                                                n--;
+                                            } else if (((nX1 >= mX1) & (nX2 <= mX2) & (mY1 >= nY1) & (mY2 <= nY2)) | ((mX1 >= nX1) & (mX2 <= nX2) & (nY1 >= mY1) & (nY2 <= mY2))) {
+                                                moveSpace.push_back(edgeList[i][j].at(n));
+                                                edgeList[i][j].erase(edgeList[i][j].begin() + n);
+                                                // std::cout << "inside 6 deep for loop" << j << std::endl;
+                                                if (n <= k) {
+                                                    k--;
+                                                    movedEdges++;
+                                                }
+                                                n--;
+                                            }
+                                        }
+                                    }
+                                    edgeList[i].push_back(moveSpace);
+                                    cDecrement = true;
+                                    // std::vector<Reroute> temp;
+                                    // Reroute left = Reroute(a, 0, j, xAxis, xMin, xMax, yAxis, yAxis);
+                                    // Reroute right = Reroute(a, 0, j, xAxis, xMax, xMin, yAxis, yAxis);
+                                    // Reroute bottom = Reroute(j, 1, a, yAxis, yMin, yMax, xAxis, xAxis);
+                                    // Reroute top = Reroute(j, 1, a, yAxis, yMax, yMin, xAxis, xAxis);
+                                    // found = 1;
+                                    // temp.push_back(left);
+                                    // temp.push_back(right);
+                                    // temp.push_back(bottom);
+                                    // temp.push_back(top);
+                                    // errors.push_back(temp);
+                                    // vertical[j].erase(vertical[j].begin() + k);
 
+                                }
+                            }
                         }
                     }
                 }
+                if (cDecrement) {
+                    std::vector<std::vector<int>> moveSpaceSlow;
+                    moveSpaceSlow.push_back({x2, y2, x2, y2});
+                    edgeList[a][b].erase(edgeList[a][b].begin() + c);
+                    c--;
+                    int movedEdges = 0;
+                    for (int e = 0; e < moveSpaceSlow.size(); e++) {
+                        int eX1 = moveSpaceSlow[e].at(0);
+                        int eY1 = moveSpaceSlow[e].at(1);
+                        int eX2 = moveSpaceSlow[e].at(2);
+                        int eY2 = moveSpaceSlow[e].at(3);
+                        for (int f = 0; f < edgeList[a][b].size(); f++) {
+                            int fX1 = edgeList[a][b][f].at(0);
+                            int fY1 = edgeList[a][b][f].at(1);
+                            int fX2 = edgeList[a][b][f].at(2);
+                            int fY2 = edgeList[a][b][f].at(3);
+                            if (((eX1 == eX2) & (fX1 == fX2) & (eX1 == fX1)) & (((eY2 >= fY1) & (eY2 <= fY2)) | ((fY2 >= eY1) & (fY2 <= eY2)))) {
+                                moveSpaceSlow.push_back(edgeList[a][b].at(f));
+                                edgeList[a][b].erase(edgeList[a][b].begin() + f);
+                                if (f <= c) {
+                                    c--;
+                                    movedEdges++;
+                                }
+                                f--;
+                            } else if (((eY1 == eY2) & (fY1 == fY2) & (eY1 == fY1)) & (((eX2 >= fX1) & (eX2 <= fX2)) | ((fX2 >= eX1) & (fX2 <= eX2)))) {
+                                moveSpaceSlow.push_back(edgeList[a][b].at(f));
+                                edgeList[a][b].erase(edgeList[a][b].begin() + f);
+                                if (f <= c) {
+                                    c--;
+                                    movedEdges++;
+                                }
+                                f--;
+                            } else if (((fX1 >= eX1) & (fX2 <= eX2) & (eY1 >= fY1) & (eY2 <= fY2)) | ((eX1 >= fX1) & (eX2 <= fX2) & (fY1 >= eY1) & (fY2 <= eY2))) {
+                                // std::cout << "moveSpaceSlow: " << moveSpaceSlow.size() << std::endl;
+                                moveSpaceSlow.push_back(edgeList[a][b].at(f));
+                                // std::cout << "moveSpaceSlow: " << moveSpaceSlow.size() << std::endl;
+                                edgeList[a][b].erase(edgeList[a][b].begin() + f);
+                                // std::cout << "inside 6 not so deep for loop" << std::endl;
+                                if (f <= c) {
+                                    c--;
+                                    movedEdges++;
+                                }
+                                f--;
+                            }
+                        }
+                    }
+                    edgeList[a].push_back(moveSpaceSlow);
+                }
+                // std::cout << c <<std::endl;
             }
         }
     }
 }
 
-int Steiner::plotFixed(std::ofstream &file, int idx, std::vector<std::vector<std::vector<int>>> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical, std::vector<std::string> color, int initialColor) {
+int Steiner::plotFixed(std::ofstream &file, int idx, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList, std::vector<std::string> color, int initialColor) {
     // point
     for (int i = 0; i < _init_p; ++i) {
 
@@ -749,339 +875,564 @@ int Steiner::plotFixed(std::ofstream &file, int idx, std::vector<std::vector<std
     }
     // RST
     if (!initialColor) {
-        for (unsigned i = 0; i < horizontal.size(); ++i) {
-            for (unsigned j = 0; j < horizontal[i].size(); ++j) {
-                file << "set arrow " << idx++ << " from "
-                     << horizontal[i][j].at(1) << "," << horizontal[i][j].at(0) << " to "
-                     << horizontal[i][j].at(2) << "," << horizontal[i][j].at(0)
-                     << " nohead lc rgb \""
-                     << color.at(i % color.size())
-                     << "\" lw 1.5 back\n";
-            }
-        }
-        for (unsigned i = 0; i < vertical.size(); ++i) {
-            for (unsigned j = 0; j < vertical[i].size(); ++j) {
-                file << "set arrow " << idx++ << " from "
-                     << vertical[i][j].at(0) << "," << vertical[i][j].at(1) << " to "
-                     << vertical[i][j].at(0) << "," << vertical[i][j].at(2)
-                     << " nohead lc rgb \""
-                     << color.at(i % color.size())
-                     << "\" lw 1.5 back\n";
+        for (int i = 0; i < edgeList.size(); i++) {
+            for (int j = 0; j < edgeList[i].size(); j++) {
+                for (int k = 0; k < edgeList[i][j].size(); k++) {
+                    file << "set arrow " << idx++ << " from "
+                         << edgeList[i][j][k].at(0) << "," << edgeList[i][j][k].at(1) << " to "
+                         << edgeList[i][j][k].at(2) << "," << edgeList[i][j][k].at(3)
+                         << " nohead lc rgb \""
+                         << color.at(j % color.size())
+                         << "\" lw 1.5 back\n";
+                }
             }
         }
     }
     return idx;
 }
 
-void fixError(std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<int>>> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical) {
-    int buffer = 2;
-
-    while (!errors.empty()) {
-        // std::cout << errors.size() << std::endl;
-        int min = 4000;
-        int minIdx = 0;
-        int netIdx = 0;
-        Reroute distance;
-        int verticalIdx;
-        int verticalNetNum;
-        int horizontalIdx;
-        int horizontalNetNum;
-        for (int i = 0; i < errors[0].size(); i++) {
-            Reroute candidate = errors[0].at(i);
-            if (candidate.isV) {
-                verticalIdx = vertical[candidate.netNum].size() + 1;
-                for (int j = 0; j < vertical[candidate.netNum].size(); j++) {
-                    if (i % 2 == 0) {
-                        if ((candidate.head == vertical[candidate.netNum][j].at(1)) & (candidate.tail == vertical[candidate.netNum][j].at(2)) & (candidate.lWing == vertical[candidate.netNum][j].at(0))) {
-                            verticalIdx = j;
-                            verticalNetNum = candidate.netNum;
-                            // std::cout << "found bottom at " << verticalIdx << std::endl;
-                            // std::cout << vertical[candidate.netNum][j].at(0) << std::endl;
-                            // std::cout << vertical[candidate.netNum][j].at(1) << std::endl;
-                            // std::cout << vertical[candidate.netNum][j].at(2) << std::endl;
-                        }
-                    } else {
-                        if ((candidate.head == vertical[candidate.netNum][j].at(2)) & (candidate.tail == vertical[candidate.netNum][j].at(1)) & (candidate.lWing == vertical[candidate.netNum][j].at(0))) {
-                            verticalIdx = j;
-                            verticalNetNum = candidate.netNum;
-                            // std::cout << "found top at " << verticalIdx << std::endl;
-                            // std::cout << vertical[candidate.netNum][j].at(0) << std::endl;
-                            // std::cout << vertical[candidate.netNum][j].at(1) << std::endl;
-                            // std::cout << vertical[candidate.netNum][j].at(2) << std::endl;
-                        }
+// void Steiner::createGrid(std::ofstream &file, int spacing)
+// {
+// int height = _boundaryTop - _boundaryBottom;
+// int width = _boundaryRight - _boundaryLeft;
+// for(int k = 0; (k < hight/spacing); k++){
+// file << "set arrow " << idx++ << " from "
+// << edgeList[i][j][k].at(0) << "," << edgeList[i][j][k].at(1) << " to "
+// << edgeList[i][j][k].at(2) << "," << edgeList[i][j][k].at(3)
+// << " nohead lc rgb \""
+// << color.at(j % color.size())
+// << "\" lw 1.5 back\n";
+// }
+// }
+void Steiner::cleanNetlist(std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList, int steinerNum) {
+    for (int i = 0; i < edgeList[steinerNum].size(); i++) {
+        for (int j = 0; j < edgeList[steinerNum][i].size(); j++) {
+            if ((edgeList[steinerNum][i][j].at(0) == edgeList[steinerNum][i][j].at(2)) & (edgeList[steinerNum][i][j].at(1) == edgeList[steinerNum][i][j].at(3))) {
+                bool foundRepetition = true;
+                for (int k = 0; k < _init_p; k++) {
+                    if ((_points[k].x == edgeList[steinerNum][i][j].at(0)) & (_points[k].y == edgeList[steinerNum][i][j].at(1))) {
+                        foundRepetition = false;
+                        break;
                     }
                 }
-                // std::cout << verticalIdx << std::endl;
-                if (verticalIdx < vertical[candidate.netNum].size()) {
-                    errors[0].at(i).head = candidate.head + (((i % 2) * 2 - 1) * buffer);
-                    errors[0].at(i).lWing = candidate.lWing + (((i % 2) * 2 - 1) * buffer);
-                    errors[0].at(i).rWing = candidate.rWing - (((i % 2) * 2 - 1) * buffer);
-                    // std::cout << errors[0].at(i).head << " " << errors[0].at(i).lWing << " " << errors[0].at(i).rWing << std::endl;
-                    bool verticalHead = true;
-                    bool verticalWing = true;
-                    while (!(errors[0].at(i) == candidate) | verticalHead | verticalWing) {
-                        verticalHead = false;
-                        verticalWing = false;
-                        candidate = errors[0].at(i);
-                        for (int m = 0; m < vertical[candidate.netNum].size(); m++) {
-                            int smallNum = vertical[candidate.netNum][m][1];
-                            int bigNum = vertical[candidate.netNum][m][2];
-                            if ((smallNum <= candidate.head) & (bigNum >= candidate.head)) {
-                                if (i % 2 == 0) {
-                                    if ((vertical[candidate.netNum][m][0] >= candidate.lWing) && (vertical[candidate.netNum][m][0] <= candidate.rWing)) {
-                                        errors[0].at(i).head = smallNum - buffer;
-                                        verticalHead = true;
-                                    }
-                                } else {
-                                    if ((vertical[candidate.netNum][m][0] >= candidate.rWing) && (vertical[candidate.netNum][m][0] <= candidate.lWing)) {
-                                        errors[0].at(i).head = bigNum + buffer;
-                                        verticalHead = true;
-                                    }
-                                }
-                            }
-                        }
-                        candidate = errors[0].at(i);
-                        for (int n = 0; n < horizontal[candidate.netNum].size(); n++) {
-                            int smallNum = horizontal[candidate.netNum][n][1];
-                            int bigNum = horizontal[candidate.netNum][n][2];
-                            if (i % 2 == 0) {
-                                if ((horizontal[candidate.netNum][n][0] >= candidate.head) & (horizontal[candidate.netNum][n][0] <= candidate.issuePoint)) {
-                                    if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
-                                        errors[0].at(i).lWing = smallNum - buffer;
-                                        verticalWing = true;
-                                    }
-                                    if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
-                                        errors[0].at(i).rWing = bigNum + buffer;
-                                        verticalWing = true;
-                                    }
-                                }
-                            } else {
-                                if ((horizontal[candidate.netNum][n][0] <= candidate.head) & (horizontal[candidate.netNum][n][0] >= candidate.issuePoint)) {
-                                    if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
-                                        errors[0].at(i).lWing = bigNum + buffer;
-                                        verticalWing = true;
-                                        // std::cout << "Wing adjusted" << std::endl;
-                                    }
-                                    if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
-                                        errors[0].at(i).rWing = smallNum - buffer;
-                                        verticalWing = true;
-                                        // std::cout << "Wing adjusted" << std::endl;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (foundRepetition) {
+                    edgeList[steinerNum][i].erase(edgeList[steinerNum][i].begin() + j);
+                    j--;
                 }
-            } else {
-                horizontalIdx = horizontal[candidate.netNum].size() + 1;
-                for (int j = 0; j < horizontal[candidate.netNum].size(); j++) {
-                    if (i % 2 == 0) {
-                        if ((candidate.head == horizontal[candidate.netNum][j].at(1)) & (candidate.tail == horizontal[candidate.netNum][j].at(2)) & (candidate.lWing == horizontal[candidate.netNum][j].at(0))) {
-                            horizontalIdx = j;
-                            horizontalNetNum = candidate.netNum;
-                            // std::cout << "found left at " << horizontalIdx << std::endl;
-                            // std::cout << horizontal[candidate.netNum][j].at(0) << std::endl;
-                            // std::cout << horizontal[candidate.netNum][j].at(1) << std::endl;
-                            // std::cout << horizontal[candidate.netNum][j].at(2) << std::endl;
-                        }
-                    } else {
-                        if ((candidate.head == horizontal[candidate.netNum][j].at(2)) & (candidate.tail == horizontal[candidate.netNum][j].at(1)) & (candidate.lWing == horizontal[candidate.netNum][j].at(0))) {
-                            horizontalIdx = j;
-                            horizontalNetNum = candidate.netNum;
-                            // std::cout << "found right at " << horizontalIdx << std::endl;
-                            // std::cout << horizontal[candidate.netNum][j].at(0) << std::endl;
-                            // std::cout << horizontal[candidate.netNum][j].at(1) << std::endl;
-                            // std::cout << horizontal[candidate.netNum][j].at(2) << std::endl;
-                        }
-                    }
-                }
-                // std::cout << horizontalIdx << std::endl;
-                if (horizontalIdx < horizontal[candidate.netNum].size()) {
-                    errors[0].at(i).head = candidate.head + (((i % 2) * 2 - 1) * buffer);
-                    errors[0].at(i).lWing = candidate.lWing + (((i % 2) * 2 - 1) * buffer);
-                    errors[0].at(i).rWing = candidate.rWing - (((i % 2) * 2 - 1) * buffer);
-                    // std::cout << errors[0].at(i).head << " " << errors[0].at(i).lWing << " " << errors[0].at(i).rWing  << std::endl;
-                    bool horizontalHead = true;
-                    bool horizontalWing = true;
-                    while (!(errors[0].at(i) == candidate) | horizontalHead | horizontalWing) {
-                        horizontalHead = false;
-                        horizontalWing = false;
-                        candidate = errors[0].at(i);
-                        for (int m = 0; m < horizontal[candidate.netNum].size(); m++) {
-                            int smallNum = horizontal[candidate.netNum][m][1];
-                            int bigNum = horizontal[candidate.netNum][m][2];
-                            if ((smallNum <= candidate.head) & (bigNum >= candidate.head)) {
-                                if (i % 2 == 0) {
-                                    if ((horizontal[candidate.netNum][m][0] >= candidate.lWing) && (horizontal[candidate.netNum][m][0] <= candidate.rWing)) {
-                                        errors[0].at(i).head = smallNum - buffer;
-                                        horizontalHead = true;
-                                    }
-                                } else {
-                                    if ((horizontal[candidate.netNum][m][0] >= candidate.rWing) && (horizontal[candidate.netNum][m][0] <= candidate.lWing)) {
-                                        errors[0].at(i).head = bigNum + buffer;
-                                        horizontalHead = true;
-                                    }
-                                }
-                            }
-                        }
-                        candidate = errors[0].at(i);
-                        for (int n = 0; n < vertical[candidate.netNum].size(); n++) {
-                            int smallNum = vertical[candidate.netNum][n][1];
-                            int bigNum = vertical[candidate.netNum][n][2];
-                            if (i % 2 == 0) {
-                                if ((vertical[candidate.netNum][n][0] >= candidate.head) & (vertical[candidate.netNum][n][0] <= candidate.issuePoint)) {
-                                    if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
-                                        errors[0].at(i).lWing = smallNum - buffer;
-                                        horizontalWing = true;
-                                        // std::cout << "Wing adjusted" << std::endl;
-                                    }
-                                    if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
-                                        errors[0].at(i).rWing = bigNum + buffer;
-                                        horizontalWing = true;
-                                        // std::cout << "Wing adjusted" << std::endl;
-                                    }
-                                }
-                            } else {
-                                if ((vertical[candidate.netNum][n][0] <= candidate.head) & (vertical[candidate.netNum][n][0] >= candidate.issuePoint)) {
-                                    if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
-                                        errors[0].at(i).lWing = bigNum + buffer;
-                                        horizontalWing = true;
-                                    }
-                                    if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
-                                        errors[0].at(i).rWing = smallNum - buffer;
-                                        horizontalWing = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (i == 0) {
-                distance = errors[0].at(0);
-                minIdx = i;
-            } else if ((candidate < distance) & (candidate.head <= 100) & (candidate.head >= 0) & (candidate.lWing <= 100) & (candidate.lWing >= 0) & (candidate.rWing <= 100) & (candidate.rWing >= 0)) {
-                distance = candidate;
-                minIdx = i;
-                // std::cout << minIdx << std::endl;
-                // std::cout << "issuePoint: " << distance.issuePoint << std::endl;
-                // std::cout << "otherPoint: " << distance.rWing << std::endl;
-            }
-        }
-        if ((verticalIdx < vertical[verticalNetNum].size()) & (horizontalIdx < horizontal[horizontalNetNum].size())) {
-            if (minIdx < 2) {
-                int hLeft = distance.issuePoint;
-                int hRight = distance.head;
-
-                std::vector<int> tempH;
-                if (hRight < hLeft) {
-                    hRight = hLeft;
-                    hLeft = distance.head;
-                }
-
-                tempH.push_back(distance.lWing);
-                tempH.push_back(hLeft);
-                tempH.push_back(hRight);
-                horizontal[distance.movingNet].push_back(tempH);
-                tempH.clear();
-                tempH.push_back(distance.rWing);
-                tempH.push_back(hLeft);
-                tempH.push_back(hRight);
-                horizontal[distance.movingNet].push_back(tempH);
-                std::cout << "NetNum: " << distance.netNum << std::endl;
-                std::cout << "isV: " << distance.isV << std::endl;
-                std::cout << "movingNet: " << distance.movingNet << std::endl;
-                std::cout << "issuePoint: " << distance.issuePoint << std::endl;
-                std::cout << "head: " << distance.head << std::endl;
-                std::cout << "tail: " << distance.tail << std::endl;
-                std::cout << "lWing: " << distance.lWing << std::endl;
-                std::cout << "rWing: " << distance.rWing << std::endl << std::endl;
-
-                int hTop = distance.lWing;
-                int hBottom = distance.rWing;
-
-                if (hTop < hBottom) {
-                    hTop = hBottom;
-                    hBottom = distance.lWing;
-                }
-                std::vector<int> tempV;
-                tempV.push_back(distance.head);
-                tempV.push_back(hBottom);
-                tempV.push_back(hTop);
-                vertical[distance.movingNet].push_back(tempV);
-
-                int verticalTop = vertical[distance.movingNet][verticalIdx].at(2);
-                vertical[distance.movingNet][verticalIdx].at(2) = hBottom;
-                if (vertical[distance.movingNet][verticalIdx].at(1) > vertical[distance.movingNet][verticalIdx].at(2)) {
-                    vertical[distance.movingNet][verticalIdx].at(2) = vertical[distance.movingNet][verticalIdx].at(1);
-                    vertical[distance.movingNet][verticalIdx].at(1) = hBottom;
-                }
-                tempV.clear();
-                tempV.push_back(vertical[distance.movingNet][verticalIdx].at(0));
-                tempV.push_back(hTop);
-                tempV.push_back(verticalTop);
-                if (hTop > verticalTop) {
-                    tempV.at(1) = tempV.at(2);
-                    tempV.at(2) = hTop;
-                }
-                vertical[distance.movingNet].push_back(tempV);
-
-            } else {
-                int vTop = distance.issuePoint;
-                int vBottom = distance.head;
-
-                std::vector<int> tempV;
-                if (vTop < vBottom) {
-                    vTop = vBottom;
-                    vBottom = distance.issuePoint;
-                }
-
-                tempV.push_back(distance.lWing);
-                tempV.push_back(vBottom);
-                tempV.push_back(vTop);
-                vertical[distance.movingNet].push_back(tempV);
-                tempV.clear();
-                tempV.push_back(distance.rWing);
-                tempV.push_back(vBottom);
-                tempV.push_back(vTop);
-                vertical[distance.movingNet].push_back(tempV);
-
-
-                int hLeft = distance.lWing;
-                int hRight = distance.rWing;
-
-                if (hRight < hLeft) {
-                    hRight = hLeft;
-                    hLeft = distance.rWing;
-                }
-                std::vector<int> tempH;
-                tempH.push_back(distance.head);
-                tempH.push_back(hLeft);
-                tempH.push_back(hRight);
-                horizontal[distance.movingNet].push_back(tempH);
-
-                int horizontalRight = horizontal[distance.movingNet][horizontalIdx].at(2);
-                horizontal[distance.movingNet][horizontalIdx].at(2) = hLeft;
-                if (horizontal[distance.movingNet][horizontalIdx].at(1) > horizontal[distance.movingNet][horizontalIdx].at(2)) {
-                    horizontal[distance.movingNet][horizontalIdx].at(2) = horizontal[distance.movingNet][horizontalIdx].at(1);
-                    horizontal[distance.movingNet][horizontalIdx].at(1) = hLeft;
-                }
-                tempH.clear();
-                tempH.push_back(horizontal[distance.movingNet][horizontalIdx].at(0));
-                tempH.push_back(hRight);
-                tempH.push_back(horizontalRight);
-                horizontal[distance.movingNet].push_back(tempH);
-                if (hRight > horizontalRight) {
-                    tempH.at(1) = tempH.at(2);
-                    tempH.at(2) = hRight;
-                }
-                // std::cout << "head: " << distance.head << std::endl;
-                // std::cout << "hLeft: " << hLeft << std::endl;
-                // std::cout << "hRight: " << hRight << std::endl << std::endl;
             }
         }
 
-        errors.erase(errors.begin());
     }
+    for (int i = 0; i < edgeList[steinerNum].size(); i++) {
+        bool again = true;
+        while (again) {
+            again = false;
+            bool removeSpace = true;
+            std::vector<std::vector<int>> pointsFound;
+            for (int j = 0; j < edgeList[steinerNum][i].size(); j++) {
+                bool foundP1 = false;
+                bool foundP2 = false;
+                for (int k = 0; k < pointsFound.size(); k++) {
+                    if ((edgeList[steinerNum][i][j].at(0) == pointsFound[k].at(0)) & (edgeList[steinerNum][i][j].at(1) == pointsFound[k].at(1))) {
+                        pointsFound[k].at(2)++;
+                        foundP1 = true;
+                    }
+                    if ((edgeList[steinerNum][i][j].at(2) == pointsFound[k].at(0)) & (edgeList[steinerNum][i][j].at(3) == pointsFound[k].at(1))) {
+                        pointsFound[k].at(2)++;
+                        foundP2 = true;
+                    }
+                }
+                if (!foundP1) {
+                    pointsFound.push_back({edgeList[steinerNum][i][j].at(0), edgeList[steinerNum][i][j].at(1), 0});
+                }
+                if (!foundP2) {
+                    pointsFound.push_back({edgeList[steinerNum][i][j].at(2), edgeList[steinerNum][i][j].at(3), 0});
+                }
+            }
+            for (int j = 0; j < _init_p; ++j) {
+                for (int k = 0; k < pointsFound.size(); k++) {
+                    if ((_points[j].x == pointsFound[k].at(0)) & (_points[j].y == pointsFound[k].at(1))) {
+                        pointsFound[k].at(2)++;
+                        removeSpace = false;
+                    }
+                }
+            }
+            if (removeSpace) {
+                edgeList[steinerNum].erase(edgeList[steinerNum].begin() + i);
+                i--;
+            } else {
+                //std::cout << "pointSize: " << pointsFound.size() << std::endl;
+                for (int j = 0; j < pointsFound.size(); j++) {
+                    if (pointsFound[j].at(2) == 0) {
+                        for (int k = 0; k < edgeList[steinerNum][i].size(); k++) {
+                            if ((edgeList[steinerNum][i][k].at(0) == pointsFound[j].at(0)) & (edgeList[steinerNum][i][k].at(1) == pointsFound[j].at(1))) {
+                                edgeList[steinerNum][i].erase(edgeList[steinerNum][i].begin() + k);
+                                k--;
+                                again = true;
+                                break;
+                                // std::cout << "left edge1 is erased" << std::endl;
+                            } else if ((edgeList[steinerNum][i][k].at(2) == pointsFound[j].at(0)) & (edgeList[steinerNum][i][k].at(3) == pointsFound[j].at(1))) {
+                                edgeList[steinerNum][i].erase(edgeList[steinerNum][i].begin() + k);
+                                k--;
+                                again = true;
+                                break;
+                                // std::cout << "right edge1 is erased" << std::endl;
+                            }
+                            // std::cout << "loop did not break: " << k << std::endl;
+                        }
+                    }
+                }
+            }
+            // std::cout << "pointSize: " << pointsFound.size() << std::endl;
+        }
+    }
+}
+// void fixError(std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<int>>> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical, int buffer) {
+
+// while (!errors.empty()) {
+// // std::cout << errors.size() << std::endl;
+// int min = 4000;
+// int minIdx = 0;
+// int netIdx = 0;
+// Reroute distance;
+// int verticalIdx;
+// int verticalNetNum;
+// int horizontalIdx;
+// int horizontalNetNum;
+// for (int i = 0; i < errors[0].size(); i++) {
+// Reroute candidate = errors[0].at(i);
+// if (candidate.isV) {
+// verticalIdx = vertical[candidate.netNum].size() + 1;
+// for (int j = 0; j < vertical[candidate.netNum].size(); j++) {
+// if (i % 2 == 0) {
+// if ((candidate.head == vertical[candidate.netNum][j].at(1)) & (candidate.tail == vertical[candidate.netNum][j].at(2)) & (candidate.lWing == vertical[candidate.netNum][j].at(0))) {
+// verticalIdx = j;
+// verticalNetNum = candidate.netNum;
+// // std::cout << "found bottom at " << verticalIdx << std::endl;
+// // std::cout << vertical[candidate.netNum][j].at(0) << std::endl;
+// // std::cout << vertical[candidate.netNum][j].at(1) << std::endl;
+// // std::cout << vertical[candidate.netNum][j].at(2) << std::endl;
+// }
+// } else {
+// if ((candidate.head == vertical[candidate.netNum][j].at(2)) & (candidate.tail == vertical[candidate.netNum][j].at(1)) & (candidate.lWing == vertical[candidate.netNum][j].at(0))) {
+// verticalIdx = j;
+// verticalNetNum = candidate.netNum;
+// // std::cout << "found top at " << verticalIdx << std::endl;
+// // std::cout << vertical[candidate.netNum][j].at(0) << std::endl;
+// // std::cout << vertical[candidate.netNum][j].at(1) << std::endl;
+// // std::cout << vertical[candidate.netNum][j].at(2) << std::endl;
+// }
+// }
+// }
+// // std::cout << verticalIdx << std::endl;
+// if (verticalIdx < vertical[candidate.netNum].size()) {
+// errors[0].at(i).head = candidate.head + (((i % 2) * 2 - 1) * buffer);
+// errors[0].at(i).lWing = candidate.lWing + (((i % 2) * 2 - 1) * buffer);
+// errors[0].at(i).rWing = candidate.rWing - (((i % 2) * 2 - 1) * buffer);
+// // std::cout << errors[0].at(i).head << " " << errors[0].at(i).lWing << " " << errors[0].at(i).rWing << std::endl;
+// bool verticalHead = true;
+// bool verticalWing = true;
+// while (!(errors[0].at(i) == candidate) | verticalHead | verticalWing) {
+// verticalHead = false;
+// verticalWing = false;
+// candidate = errors[0].at(i);
+// for (int m = 0; m < vertical[candidate.netNum].size(); m++) {
+// int smallNum = vertical[candidate.netNum][m][1];
+// int bigNum = vertical[candidate.netNum][m][2];
+// if ((smallNum <= candidate.head) & (bigNum >= candidate.head)) {
+// if (i % 2 == 0) {
+// if ((vertical[candidate.netNum][m][0] >= candidate.lWing) && (vertical[candidate.netNum][m][0] <= candidate.rWing)) {
+// errors[0].at(i).head = smallNum - buffer;
+// verticalHead = true;
+// }
+// } else {
+// if ((vertical[candidate.netNum][m][0] >= candidate.rWing) && (vertical[candidate.netNum][m][0] <= candidate.lWing)) {
+// errors[0].at(i).head = bigNum + buffer;
+// verticalHead = true;
+// }
+// }
+// }
+// }
+// candidate = errors[0].at(i);
+// for (int n = 0; n < horizontal[candidate.netNum].size(); n++) {
+// int smallNum = horizontal[candidate.netNum][n][1];
+// int bigNum = horizontal[candidate.netNum][n][2];
+// if (i % 2 == 0) {
+// if ((horizontal[candidate.netNum][n][0] >= candidate.head) & (horizontal[candidate.netNum][n][0] <= candidate.issuePoint)) {
+// if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
+// errors[0].at(i).lWing = smallNum - buffer;
+// verticalWing = true;
+// }
+// if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
+// errors[0].at(i).rWing = bigNum + buffer;
+// verticalWing = true;
+// }
+// }
+// } else {
+// if ((horizontal[candidate.netNum][n][0] <= candidate.head) & (horizontal[candidate.netNum][n][0] >= candidate.issuePoint)) {
+// if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
+// errors[0].at(i).lWing = bigNum + buffer;
+// verticalWing = true;
+// // std::cout << "Wing adjusted" << std::endl;
+// }
+// if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
+// errors[0].at(i).rWing = smallNum - buffer;
+// verticalWing = true;
+// // std::cout << "Wing adjusted" << std::endl;
+// }
+// }
+// }
+// }
+// }
+// }
+// } else {
+// horizontalIdx = horizontal[candidate.netNum].size() + 1;
+// for (int j = 0; j < horizontal[candidate.netNum].size(); j++) {
+// if (i % 2 == 0) {
+// if ((candidate.head == horizontal[candidate.netNum][j].at(1)) & (candidate.tail == horizontal[candidate.netNum][j].at(2)) & (candidate.lWing == horizontal[candidate.netNum][j].at(0))) {
+// horizontalIdx = j;
+// horizontalNetNum = candidate.netNum;
+// // std::cout << "found left at " << horizontalIdx << std::endl;
+// // std::cout << horizontal[candidate.netNum][j].at(0) << std::endl;
+// // std::cout << horizontal[candidate.netNum][j].at(1) << std::endl;
+// // std::cout << horizontal[candidate.netNum][j].at(2) << std::endl;
+// }
+// } else {
+// if ((candidate.head == horizontal[candidate.netNum][j].at(2)) & (candidate.tail == horizontal[candidate.netNum][j].at(1)) & (candidate.lWing == horizontal[candidate.netNum][j].at(0))) {
+// horizontalIdx = j;
+// horizontalNetNum = candidate.netNum;
+// // std::cout << "found right at " << horizontalIdx << std::endl;
+// // std::cout << horizontal[candidate.netNum][j].at(0) << std::endl;
+// // std::cout << horizontal[candidate.netNum][j].at(1) << std::endl;
+// // std::cout << horizontal[candidate.netNum][j].at(2) << std::endl;
+// }
+// }
+// }
+// // std::cout << horizontalIdx << std::endl;
+// if (horizontalIdx < horizontal[candidate.netNum].size()) {
+// errors[0].at(i).head = candidate.head + (((i % 2) * 2 - 1) * buffer);
+// errors[0].at(i).lWing = candidate.lWing + (((i % 2) * 2 - 1) * buffer);
+// errors[0].at(i).rWing = candidate.rWing - (((i % 2) * 2 - 1) * buffer);
+// // std::cout << errors[0].at(i).head << " " << errors[0].at(i).lWing << " " << errors[0].at(i).rWing  << std::endl;
+// bool horizontalHead = true;
+// bool horizontalWing = true;
+// while (!(errors[0].at(i) == candidate) | horizontalHead | horizontalWing) {
+// horizontalHead = false;
+// horizontalWing = false;
+// candidate = errors[0].at(i);
+// for (int m = 0; m < horizontal[candidate.netNum].size(); m++) {
+// int smallNum = horizontal[candidate.netNum][m][1];
+// int bigNum = horizontal[candidate.netNum][m][2];
+// if ((smallNum <= candidate.head) & (bigNum >= candidate.head)) {
+// if (i % 2 == 0) {
+// if ((horizontal[candidate.netNum][m][0] >= candidate.lWing) && (horizontal[candidate.netNum][m][0] <= candidate.rWing)) {
+// errors[0].at(i).head = smallNum - buffer;
+// horizontalHead = true;
+// }
+// } else {
+// if ((horizontal[candidate.netNum][m][0] >= candidate.rWing) && (horizontal[candidate.netNum][m][0] <= candidate.lWing)) {
+// errors[0].at(i).head = bigNum + buffer;
+// horizontalHead = true;
+// }
+// }
+// }
+// }
+// candidate = errors[0].at(i);
+// for (int n = 0; n < vertical[candidate.netNum].size(); n++) {
+// int smallNum = vertical[candidate.netNum][n][1];
+// int bigNum = vertical[candidate.netNum][n][2];
+// if (i % 2 == 0) {
+// if ((vertical[candidate.netNum][n][0] >= candidate.head) & (vertical[candidate.netNum][n][0] <= candidate.issuePoint)) {
+// if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
+// errors[0].at(i).lWing = smallNum - buffer;
+// horizontalWing = true;
+// // std::cout << "Wing adjusted" << std::endl;
+// }
+// if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
+// errors[0].at(i).rWing = bigNum + buffer;
+// horizontalWing = true;
+// // std::cout << "Wing adjusted" << std::endl;
+// }
+// }
+// } else {
+// if ((vertical[candidate.netNum][n][0] <= candidate.head) & (vertical[candidate.netNum][n][0] >= candidate.issuePoint)) {
+// if ((smallNum <= candidate.lWing) & (bigNum >= candidate.lWing)) {
+// errors[0].at(i).lWing = bigNum + buffer;
+// horizontalWing = true;
+// }
+// if ((smallNum <= candidate.rWing) & (bigNum >= candidate.rWing)) {
+// errors[0].at(i).rWing = smallNum - buffer;
+// horizontalWing = true;
+// }
+// }
+// }
+// }
+// }
+// }
+// }
+
+// if (i == 0) {
+// distance = errors[0].at(0);
+// minIdx = i;
+// } else if ((candidate < distance) & (candidate.head <= 100) & (candidate.head >= 0) & (candidate.lWing <= 100) & (candidate.lWing >= 0) & (candidate.rWing <= 100) & (candidate.rWing >= 0)) {
+// distance = candidate;
+// minIdx = i;
+// // std::cout << minIdx << std::endl;
+// // std::cout << "issuePoint: " << distance.issuePoint << std::endl;
+// // std::cout << "otherPoint: " << distance.rWing << std::endl;
+// }
+// }
+// if ((verticalIdx < vertical[verticalNetNum].size()) & (horizontalIdx < horizontal[horizontalNetNum].size())) {
+// if (minIdx < 2) {
+// int hLeft = distance.issuePoint;
+// int hRight = distance.head;
+
+// std::vector<int> tempH;
+// if (hRight < hLeft) {
+// hRight = hLeft;
+// hLeft = distance.head;
+// }
+
+// tempH.push_back(distance.lWing);
+// tempH.push_back(hLeft);
+// tempH.push_back(hRight);
+// horizontal[distance.movingNet].push_back(tempH);
+// tempH.clear();
+// tempH.push_back(distance.rWing);
+// tempH.push_back(hLeft);
+// tempH.push_back(hRight);
+// horizontal[distance.movingNet].push_back(tempH);
+// std::cout << "NetNum: " << distance.netNum << std::endl;
+// std::cout << "isV: " << distance.isV << std::endl;
+// std::cout << "movingNet: " << distance.movingNet << std::endl;
+// std::cout << "issuePoint: " << distance.issuePoint << std::endl;
+// std::cout << "head: " << distance.head << std::endl;
+// std::cout << "tail: " << distance.tail << std::endl;
+// std::cout << "lWing: " << distance.lWing << std::endl;
+// std::cout << "rWing: " << distance.rWing << std::endl << std::endl;
+
+// int hTop = distance.lWing;
+// int hBottom = distance.rWing;
+
+// if (hTop < hBottom) {
+// hTop = hBottom;
+// hBottom = distance.lWing;
+// }
+// std::vector<int> tempV;
+// tempV.push_back(distance.head);
+// tempV.push_back(hBottom);
+// tempV.push_back(hTop);
+// vertical[distance.movingNet].push_back(tempV);
+
+// int verticalTop = vertical[distance.movingNet][verticalIdx].at(2);
+// vertical[distance.movingNet][verticalIdx].at(2) = hBottom;
+// if (vertical[distance.movingNet][verticalIdx].at(1) > vertical[distance.movingNet][verticalIdx].at(2)) {
+// vertical[distance.movingNet][verticalIdx].at(2) = vertical[distance.movingNet][verticalIdx].at(1);
+// vertical[distance.movingNet][verticalIdx].at(1) = hBottom;
+// }
+// tempV.clear();
+// tempV.push_back(vertical[distance.movingNet][verticalIdx].at(0));
+// tempV.push_back(hTop);
+// tempV.push_back(verticalTop);
+// if (hTop > verticalTop) {
+// tempV.at(1) = tempV.at(2);
+// tempV.at(2) = hTop;
+// }
+// vertical[distance.movingNet].push_back(tempV);
+
+// } else {
+// int vTop = distance.issuePoint;
+// int vBottom = distance.head;
+
+// std::vector<int> tempV;
+// if (vTop < vBottom) {
+// vTop = vBottom;
+// vBottom = distance.issuePoint;
+// }
+
+// tempV.push_back(distance.lWing);
+// tempV.push_back(vBottom);
+// tempV.push_back(vTop);
+// vertical[distance.movingNet].push_back(tempV);
+// tempV.clear();
+// tempV.push_back(distance.rWing);
+// tempV.push_back(vBottom);
+// tempV.push_back(vTop);
+// vertical[distance.movingNet].push_back(tempV);
+
+
+// int hLeft = distance.lWing;
+// int hRight = distance.rWing;
+
+// if (hRight < hLeft) {
+// hRight = hLeft;
+// hLeft = distance.rWing;
+// }
+// std::vector<int> tempH;
+// tempH.push_back(distance.head);
+// tempH.push_back(hLeft);
+// tempH.push_back(hRight);
+// horizontal[distance.movingNet].push_back(tempH);
+
+// int horizontalRight = horizontal[distance.movingNet][horizontalIdx].at(2);
+// horizontal[distance.movingNet][horizontalIdx].at(2) = hLeft;
+// if (horizontal[distance.movingNet][horizontalIdx].at(1) > horizontal[distance.movingNet][horizontalIdx].at(2)) {
+// horizontal[distance.movingNet][horizontalIdx].at(2) = horizontal[distance.movingNet][horizontalIdx].at(1);
+// horizontal[distance.movingNet][horizontalIdx].at(1) = hLeft;
+// }
+// tempH.clear();
+// tempH.push_back(horizontal[distance.movingNet][horizontalIdx].at(0));
+// tempH.push_back(hRight);
+// tempH.push_back(horizontalRight);
+// horizontal[distance.movingNet].push_back(tempH);
+// if (hRight > horizontalRight) {
+// tempH.at(1) = tempH.at(2);
+// tempH.at(2) = hRight;
+// }
+// // std::cout << "head: " << distance.head << std::endl;
+// // std::cout << "hLeft: " << hLeft << std::endl;
+// // std::cout << "hRight: " << hRight << std::endl << std::endl;
+// }
+// }
+
+// errors.erase(errors.begin());
+// }
+// }
+
+int **new_array(int n, int m) {//所产生的二维数组第0行第0列不可用
+    int **aa;
+    aa = new int *[n];
+    for (int i = 0; i < n; i++)
+        aa[i] = new int[m];
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++)
+            aa[i][j] = 0;
+    return aa;
+}
+
+void print_grid(int **grid, int bound_x, int bound_y) {
+    for (int i = 1; i <= bound_x; i++) {
+        for (int j = 1; j <= bound_y; j++) {
+            Position pos(i, j);
+            cout << grid[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+}
+
+void map_generate(std::vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<std::vector<Point>> pin, std::vector<std::vector<Point>>, int bound_x, int bound_y, int tree_order) {
+    // build 2d array
+    // create sink_vector
+    // for tree_order tree, go through every edge in every space and set the coord to -2
+    // for all other trees, go through every edge in every space and set the coord to 1
+    // mark intersections to be a 2
+    // for tree_order tree, mark pin to be -4
+    // for tree_order tree, mark node to be -5
+    // create delete_path vector
+    // send delete_path to mark_delete for each intersection with pin, node as finish
+    // set both paths to 2
+    // set last element in both paths to -1
+    // check grid to construct sink_vector with -2 value
+    // create island vector
+    // for every island pin and node that has value -1, send source_propagate as start
+    // remove path from sink_vector
+    // create min_route and min_path, route and path
+    // call FindPath, send every Position in island vector as start and every sink_vector as finish, return minimum PathLen and path
+    // after finding the min_route, change all of its value to -2
+    // adding min_route to sink_vector
+
+}
+
+void mark_delete(int **grid, Position start, vector<int> finish, vector<vector<Position>> *path) {
+    // determine wire running horizontal or vertical by looking at adj blocks (if not 1)
+    // propagate on both directions until one of the finishes is met and record the path includes finish
+
+}
+
+void source_propagate(int **grid, Position start, vector<Position> *path) {
+    // looks all four dirs and if the value == -2, record in path, change value to -1
+}
+
+bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position *&path, int n, int m) {//计算从起始位置start到目标位置finish的最短布线路径
+    // make new grid every pass
+    int grid_copy[n][m];
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            grid_copy[i][j] = grid[i][j];
+        }
+    }
+    //找到最短布线路径则返回false
+    int i = 0;
+    if ((start.row == finish.row) && (start.col == finish.col)) {
+        PathLen = 0;
+        return true;
+    }
+    //设置方格阵列“围墙”
+    for (i = 0; i <= m + 1; i++)
+        grid_copy[0][i] = grid_copy[n + 1][i] = 1;//顶部和底部
+    for (i = 0; i <= n + 1; i++)
+        grid_copy[i][0] = grid_copy[i][m + 1] = 1;//左翼和右翼
+    //初始化相对位移
+    Position offset[4];
+    offset[0].row = 0;
+    offset[0].col = 1;//右
+    offset[1].row = 1;
+    offset[1].col = 0;//下
+    offset[2].row = 0;
+    offset[2].col = -1;//左
+    offset[3].row = -1;
+    offset[3].col = 0;//上
+    int NumOfNbrs = 4;//相邻方格数
+    Position here, nbr;
+    here.row = start.row;
+    here.col = start.col;
+    grid_copy[start.row][start.col] = 2;//起始位置的距离标记为2
+
+    grid_copy[finish.row][finish.col] = 0;//终点标记为0
+
+    queue<Position, list<Position> > Q;
+    do {
+        for (i = 0; i < NumOfNbrs; i++) {
+            // set adj 4 grids to curr grid cost + 1
+            nbr.row = here.row + offset[i].row; // 按右，下，左，上，移动
+            nbr.col = here.col + offset[i].col;
+            // if routable
+            if (grid_copy[nbr.row][nbr.col] == 0 || grid_copy[nbr.row][nbr.col] == -1 || grid_copy[nbr.row][nbr.col] == -2 || grid_copy[nbr.row][nbr.col] == -4 || grid_copy[nbr.row][nbr.col] == -5) {
+                grid_copy[nbr.row][nbr.col] = grid_copy[here.row][here.col] + 1; // curr + 1,
+                // check if any of the 4 is the sink
+                if ((nbr.row == finish.row) && (nbr.col == finish.col))
+                    break;
+                Q.push(nbr);
+            }
+        }
+        // 是否到达目标位置finish?
+        if ((nbr.row == finish.row) && (nbr.col == finish.col))
+            break;//完成布线
+        //活结点队列是否非空
+        if (Q.empty()) {
+            PathLen = INT32_MAX;
+            return false;//无解
+        }
+        here = Q.front();//取下一扩展结点
+        Q.pop();//删除第一个元素
+    } while (true);
+
+    //构造最短布线路径
+    PathLen = grid_copy[finish.row][finish.col] - 2; // 相对于start点的距离 total length - 2 (start cost)
+    path = new Position[PathLen];
+    //从目标位置finish开始向起始位置回朔
+    here = finish;
+    for (int j = PathLen - 1; j >= 0; j--) {
+        path[j] = here;
+        //找前驱位置
+        for (int i = 0; i < NumOfNbrs; i++) {
+            nbr.row = here.row + offset[i].row;//按右，下，左，上，移动
+            nbr.col = here.col + offset[i].col;
+            if (grid_copy[nbr.row][nbr.col] == j + 2)
+                break;//距离依次减小：7-6-5-4-3-2
+        }
+        here = nbr;//向前移动
+    }
+    return true;
 }

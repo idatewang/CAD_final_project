@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 #include "datastructure.h"
+#include "findPath.h"
 
 class Steiner {
 public:
@@ -25,18 +26,12 @@ public:
 
     int initializeFile(std::ofstream &of);
 
-    int plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<std::vector<int>>
+    int plotMultiple(std::ofstream &file, int idx, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList,
+                     std::vector<std::vector<Point>> &nodeList, std::string color);
 
-    > &horizontal, std::vector<std::vector<std::vector<int>>> &vertical,
-                     std::string color
-    );
+    int plotFixed(std::ofstream &file, int idx, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList, std::vector<std::string> color, int initialColor);
 
-    int plotFixed(std::ofstream &file, int idx, std::vector<std::vector<std::vector<int>>
-
-    > &horizontal, std::vector<std::vector<std::vector<int>>> &vertical,
-                  std::vector<std::string> color,
-                  int initialColor
-    );
+    void cleanNetlist(std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList, int steinerNum);
 
     std::vector<Point> getPoints(); //needs a getter
     std::vector<Edge> getEdges(); //needs a getter
@@ -59,7 +54,6 @@ public:
         bounds.push_back(_boundaryLeft);
         bounds.push_back(_boundaryTop);
         bounds.push_back(_boundaryRight);
-        return bounds;
     }
 
     // helper setters
@@ -129,12 +123,14 @@ private: // members
     std::vector<int> _init_MST;
 };
 
-void checkNets(std::ofstream &file, std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<int>>
+void checkNets(std::ofstream &file, std::vector<Reroute> &errors, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList);
 
-> horizontal, std::vector<std::vector<std::vector<int>>> vertical);
+// void fixError(std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList, int buffer);
 
-void fixError(std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<int>>
+void mark_delete(int **grid, Position start, vector<int> finish, vector<vector<Position>> *path);
 
-> &horizontal, std::vector<std::vector<std::vector<int>>> &vertical);
+void source_propagate(int **grid, Position start, vector<Position> *path);
+
+void map_generate(std::vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<std::vector<Point>> pin, std::vector<std::vector<Point>>, int bound_x, int bound_y, int tree_order);
 
 #endif
