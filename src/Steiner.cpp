@@ -8,6 +8,7 @@
 #include <cassert>
 #include "util.h"
 #include "Steiner.h"
+#include <unistd.h>
 
 using namespace std;
 
@@ -1317,7 +1318,7 @@ void print_grid(int **grid, int bound_x, int bound_y) {
         for (int j = 0; j < bound_x; j++) {
             if (grid[j][i] < 0) {
                 //cout << grid[j][i] << " ";
-                outputFile << grid[j][i] * -1 << " ";
+                outputFile << grid[j][i]<< " ";
             } else {
                 //cout << grid[j][i] << "  ";
                 outputFile << grid[j][i] << " ";
@@ -1424,33 +1425,39 @@ void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::
             Position start(x, y);
             vector<Position> path;
             source_propagate(grid, start, bound_x, bound_y, path);
-            // remove path from sink_vector_cp
-            vector<Position> sink_vector_cp = sink_vector;
-            for (int j = 0; j < path.size(); ++j) {
-                for (int k = 0; k < sink_vector_cp.size(); ++k) {
-                    if (sink_vector_cp[k] == path[j]) {
-                        sink_vector_cp.erase(sink_vector_cp.begin() + k);
-                        break;
+            // generate sink_vector_cp
+            vector<Position> sink_vector_cp;
+            for (int i = 0; i < bound_x; ++i) {
+                for (int j = 0; j < bound_y; ++j) {
+                    if (grid[i][j] == -2) {
+                        sink_vector_cp.emplace_back(i, j);
                     }
                 }
             }
             // create min_route and min_path, route and path
+
             int min_path = INT32_MAX;
             int wirelength;
             Position* min_route;
-            Position* route_path;
+            vector<Position> route_path;
+            //print_grid(grid,bound_x,bound_y);
+            //return;
             // call FindPath, send every Position in island vector as start and every sink_vector as finish, return minimum PathLen and path
-            for (int j = 0; j < path.size(); ++j) {
-                for (int k = 0; k < sink_vector_cp.size(); ++k) {
-                    FindPath(grid,path[i],sink_vector_cp[k],wirelength,route_path,bound_x,bound_y);
-                }
-            }
+            FindPath(grid,path[0],sink_vector_cp[0],wirelength,min_route,bound_x,bound_y);
+            //delete min_route;
+//            for (int j = 0; j < path.size(); ++j) {
+//                for (int k = 0; k < sink_vector_cp.size(); ++k) {
+//                    if (FindPath(grid,path[j],sink_vector_cp[k],wirelength,route_path,bound_x,bound_y)){
+//                        break;
+//                    }
+//                }
+//            }
         }
         // after finding the min_route, change all of its value to -2
         // adding min_route to sink_vector
     }
-    print_grid(grid, bound_x, bound_y);
-
+    //print_grid(grid, bound_x, bound_y);
+    delete[] grid;
     // check if there's any position that are marked 2 in other nets and restore them to 1
 }
 
@@ -1526,7 +1533,7 @@ void source_propagate(int **grid, Position start, int bound_x, int bound_y, vect
             // check if location is -2
             if (grid[nbr.row][nbr.col] == -2) {
                 path.emplace_back(nbr.row, nbr.col);
-                grid[nbr.row][nbr.col] = 8;
+                grid[nbr.row][nbr.col] = -1;
                 here.row = nbr.row;
                 here.col = nbr.col;
             } else {
@@ -1538,9 +1545,11 @@ void source_propagate(int **grid, Position start, int bound_x, int bound_y, vect
 
 }
 
-bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position *&path, int n, int m) {//计算从起始位置start到目标位置finish的最短布线路径
+bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position* &route_path, int n, int m) {//计算从起始位置start到目标位置finish的最短布线路径
     // make new grid every pass
     int grid_copy[n][m];
+    map<pair<int,int>,int> visit_map;
+//    int** grid_copy_copy = new_array(n,m);
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             grid_copy[i][j] = grid[i][j];
@@ -1576,11 +1585,22 @@ bool FindPath(int **grid, Position start, Position finish, int &PathLen, Positio
     grid_copy[finish.row][finish.col] = 0;//终点标记为0
 
     queue<Position, list<Position> > Q;
+
     do {
         for (i = 0; i < NumOfNbrs; i++) {
             // set adj 4 grids to curr grid cost + 1
             nbr.row = here.row + offset[i].row; // 按右，下，左，上，移动
             nbr.col = here.col + offset[i].col;
+            // check if on boundary
+            if (nbr.row == -1 || nbr.row == n || nbr.col == -1 || nbr.col == m) {
+                continue;
+            }
+            // check if visited
+            if (visit_map[pair<int,int>(nbr.row,nbr.col)] == 1){
+                continue;
+            } else {
+                visit_map[pair<int,int>(nbr.row,nbr.col)] = 1;
+            }
             // if routable
             if (grid_copy[nbr.row][nbr.col] == 0 || grid_copy[nbr.row][nbr.col] == -1 || grid_copy[nbr.row][nbr.col] == -2 || grid_copy[nbr.row][nbr.col] == -4 || grid_copy[nbr.row][nbr.col] == -5) {
                 grid_copy[nbr.row][nbr.col] = grid_copy[here.row][here.col] + 1; // curr + 1,
@@ -1600,15 +1620,40 @@ bool FindPath(int **grid, Position start, Position finish, int &PathLen, Positio
         }
         here = Q.front();//取下一扩展结点
         Q.pop();//删除第一个元素
+        //cout<<here.row<<"," << here.col <<endl;
+        //sleep(1);
+//        for (int i = 0; i < n; ++i) {
+//            for (int j = 0; j < m; ++j) {
+//                grid_copy_copy[i][j] = grid_copy[i][j];
+//            }
+//        }
+//        print_grid(grid_copy_copy, n, m);
+//        delete []grid_copy_copy;
     } while (true);
-
+    ofstream outputFile;
+    outputFile.open("out.txt", ios::trunc);
+    for (int i = m - 1; i >= 0; i--) {
+        for (int j = 0; j < n; j++) {
+            if (grid_copy[j][i] < 0) {
+                //cout << grid[j][i] << " ";
+                outputFile << grid_copy[j][i]<< " ";
+            } else {
+                //cout << grid[j][i] << "  ";
+                outputFile << grid_copy[j][i] << " ";
+            }
+        }
+        //cout << endl;
+        outputFile << endl;
+    }
+    outputFile.close();
     //构造最短布线路径
     PathLen = grid_copy[finish.row][finish.col] - 2; // 相对于start点的距离 total length - 2 (start cost)
-    path = new Position[PathLen];
+    route_path = new Position[PathLen];
+
     //从目标位置finish开始向起始位置回朔
     here = finish;
     for (int j = PathLen - 1; j >= 0; j--) {
-        path[j] = here;
+        route_path[j] = here;
         //找前驱位置
         for (int i = 0; i < NumOfNbrs; i++) {
             nbr.row = here.row + offset[i].row;//按右，下，左，上，移动
@@ -1618,5 +1663,11 @@ bool FindPath(int **grid, Position start, Position finish, int &PathLen, Positio
         }
         here = nbr;//向前移动
     }
+//    for (int j = 0; j < PathLen; ++j) {
+//        route_path.push_back(Position(0,0));
+//    }
+//    for (int j = 0; j < path.size(); ++j) {
+//        route_path.push_back(path[j]);
+//    }
     return true;
 }

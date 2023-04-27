@@ -139,5 +139,5 @@ void source_propagate(int **grid, Position start, int bound_x, int bound_y, vect
 
 void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<Point> pin, std::vector<Point> node, int bound_x, int bound_y, int tree_order);
 
-bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position *&path, int n, int m);
+bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position* &route_path, int n, int m);
 #endif
