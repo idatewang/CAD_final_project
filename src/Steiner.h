@@ -132,12 +132,17 @@ private: // members
 void checkNets(std::ofstream &file, std::vector<Reroute> &errors, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList);
 
 // void fixError(std::vector<std::vector<Reroute>> &errors, std::vector<std::vector<std::vector<std::vector<int>>>> &edgeList, int buffer);
+void maze_to_file(int m, int n, map<pair<int, int>,int> visit_map, int grid_copy[][n], int** grid);
 
-void mark_delete(int **grid, Position start, int bound_x, int bound_y, vector<vector<Position>> &path);
+int **new_array(int n, int m);
 
-void source_propagate(int **grid, Position start, int bound_x, int bound_y, vector<Position> &path);
+void print_grid(int **grid, int bound_x, int bound_y);
 
-void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, std::vector<Point> pin, std::vector<Point> node, int bound_x, int bound_y, int tree_order);
+void mark_delete(int **grid, Position start, int bound_x, int bound_y, vector<vector<Position>> &delete_path);
 
-bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position* &route_path, int n, int m);
+void source_propagate(int **&grid, Position start, int bound_x, int bound_y, vector<Position> &island);
+
+void map_generate(vector<std::vector<std::vector<std::vector<int>>>> edge, std::vector<Reroute> intersect, vector<vector<Point>> pin_nodes, vector<std::vector<Point>> nodeList, int bound_x, int bound_y);
+
+bool FindPath(int **grid, Position start, Position finish, int &PathLen, Position* &route_path, int n, int m, int &max_block_visited);
 #endif

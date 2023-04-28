@@ -25,7 +25,8 @@ int main() {
     Boundary area = Boundary(0, 100, 0, 100);
     // const std::vector<std::string> colors = {"purple", "green", "orange", "black"};
     const std::vector<std::string> colors = {"red", "orange", "yellow", "green", "blue", "violet", "black", "brown"};
-    const std::vector<std::string> inputNets = {"../testbench/case1", "../testbench/case2"};
+    const std::vector<std::string> inputNets = {"../testbench/case_0.txt", "../testbench/case_1.txt", "../testbench/case_2.txt", "../testbench/case_3.txt"};
+//    const std::vector<std::string> inputNets = {"../testbench/case1", "../testbench/case2"};
     //creating a sample netlist
     int numNets = 3;
     int numPins = 10;
@@ -81,13 +82,24 @@ int main() {
         Steiner test;
         test.parse(inputNets.at(i));
         allSteiners.push_back(test);
+        for (int j = 0; j < test.getPoints().size(); ++j) {
+            cout<<test.getPoints()[j].x;
+        }
     }
-
+    vector<vector<Point>> pin_nodes;
+    for (int i = 0; i < inputNets.size(); ++i) {
+        vector<Point> temp;
+        pin_nodes.push_back(temp);
+    }
+    for (int i = 0; i < allSteiners.size(); ++i) {
+        for (int j = 0; j < allSteiners[i].getPoints().size(); ++j) {
+            pin_nodes[i].emplace_back(allSteiners[i].getPoints().at(j).x,allSteiners[i].getPoints().at(j).y);
+        }
+    }
     //multiple solves
     for (int i = 0; i < allSteiners.size(); i++) {
         allSteiners[i].solve();
     }
-
     std::ofstream outputFile("createSt_tb.plt", std::ofstream::out);
     std::ofstream revisedFile("createSt_tb2.plt", std::ofstream::out);
     std::ofstream revisedAgainFile("createSt_tb3.plt", std::ofstream::out);
@@ -108,12 +120,15 @@ int main() {
 
     //assumes input to be a vector of ints with an index compared with a vector of a vector of ints
     checkNets(outputFile, errors, edgeList);
-    for (int i = 0; i < allSteiners.size(); ++i) {
-        int bound_x = allSteiners[i].get_bounds()[2] - allSteiners[i].get_bounds()[0];
-        int bound_y = allSteiners[i].get_bounds()[3] - allSteiners[i].get_bounds()[1];
-        map_generate(edgeList_cp,errors,allSteiners[i].getPoints(),nodeList[i],bound_x,bound_y,i);
-        break;
-    }
+
+
+    int bound_x = allSteiners[0].get_bounds()[2] - allSteiners[0].get_bounds()[0];
+    int bound_y = allSteiners[0].get_bounds()[3] - allSteiners[0].get_bounds()[1];
+    map_generate(edgeList_cp,errors,pin_nodes,nodeList,bound_x,bound_y);
+
+
+
+
     for (int i = 0; i < allSteiners.size(); i++) {
         // std::cout << "loop revised " << i << std::endl;
 
